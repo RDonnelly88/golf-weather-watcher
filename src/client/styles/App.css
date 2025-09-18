@@ -562,12 +562,18 @@
 
 .scores-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
+  .scores-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
   .scores-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -647,6 +653,7 @@
 .temperature .score-bar { background: linear-gradient(90deg, #FF6B6B, #FF8E53); }
 .wind .score-bar { background: linear-gradient(90deg, #4ECDC4, #44A08D); }
 .rain .score-bar { background: linear-gradient(90deg, #667EEA, #764BA2); }
+.lightness .score-bar { background: linear-gradient(90deg, #FF9500, #FF5E00); }
 
 .score-value {
   font-weight: 700;

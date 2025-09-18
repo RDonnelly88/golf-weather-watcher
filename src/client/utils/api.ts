@@ -28,7 +28,7 @@ export async function fetchWeatherForecast(
   latitude: number,
   longitude: number,
   startHour: number = 12
-): Promise<WeatherData[]> {
+): Promise<{ weatherData: WeatherData[], sunrise: string, sunset: string }> {
   const url = `https://api.open-meteo.com/v1/forecast`;
   const dateStr = targetDate.toISOString().split('T')[0];
   const endHour = startHour + 5; // 5 hour round of golf
@@ -38,6 +38,7 @@ export async function fetchWeatherForecast(
       latitude: latitude.toString(),
       longitude: longitude.toString(),
       hourly: 'temperature_2m,precipitation,rain,weathercode,cloudcover,windspeed_10m,windgusts_10m,precipitation_probability',
+      daily: 'sunrise,sunset',
       start_date: dateStr,
       end_date: dateStr,
       timezone: 'auto'
@@ -109,7 +110,7 @@ export async function fetchWeatherForecast(
             speed: hourlyData.windspeed_10m[i] / 3.6, // km/h to m/s
             gust: hourlyData.windgusts_10m[i] / 3.6
           },
-          rain: hourlyData.rain[i] > 0 ? { '3h': hourlyData.rain[i] } : undefined,
+          rain: hourlyData.rain?.[i] || hourlyData.precipitation?.[i] || 0,
           clouds: {
             all: hourlyData.cloudcover[i]
           },
@@ -141,23 +142,32 @@ export async function fetchWeatherForecast(
         },
         precipitationProbability: 15
       };
-      return [demoData];
+      return {
+        weatherData: [demoData],
+        sunrise: '',
+        sunset: ''
+      };
     }
 
-    return weatherData;
+    return {
+      weatherData,
+      sunrise: data.daily?.sunrise?.[0] || '',
+      sunset: data.daily?.sunset?.[0] || ''
+    };
   } catch (error) {
     console.error('Weather API error:', error);
     throw new Error('Failed to fetch weather data');
   }
 }
 
-export function calculateGolfScore(weatherData: WeatherData[]): GolfWeatherScore {
+export function calculateGolfScore(weatherData: WeatherData[], startHour?: number, sunrise?: string, sunset?: string): GolfWeatherScore {
   console.log('Weather data for scoring:', weatherData);
   const avgTemp = weatherData.reduce((sum, w) => sum + w.main.temp, 0) / weatherData.length;
   const avgWindSpeed = weatherData.reduce((sum, w) => sum + w.wind.speed, 0) / weatherData.length;
   const maxWindGust = Math.max(...weatherData.map(w => w.wind.gust || w.wind.speed));
   const avgCloudCover = weatherData.reduce((sum, w) => sum + w.clouds.all, 0) / weatherData.length;
-  const totalRain = weatherData.reduce((sum, w) => (w.rain?.['3h'] || 0) + sum, 0);
+  const totalRain = weatherData.reduce((sum, w) => (w.rain || 0) + sum, 0);
+  const avgPrecipChance = weatherData.reduce((sum, w) => sum + (w.precipitationProbability || 0), 0) / weatherData.length;
 
   // Only consider it rainy if there's actual precipitation, not just cloudy weather codes
   const hasRain = totalRain > 0.1;
@@ -179,17 +189,37 @@ export function calculateGolfScore(weatherData: WeatherData[]): GolfWeatherScore
   else if (avgWindSpeed < 20) windScore = 30;
   else windScore = 10;
 
-  if (maxWindGust > avgWindSpeed * 1.5 || maxWindGust > 15) {
+  // Only penalize for gusts if they're significantly high (>10 m/s) AND substantially higher than avg wind
+  if (maxWindGust > 10 && maxWindGust > avgWindSpeed * 2) {
     windScore *= 0.8;
   }
 
   let rainScore = 100;
-  if (totalRain === 0 && !hasRain) rainScore = 100;
-  else if (totalRain < 0.5) rainScore = 85;
-  else if (totalRain < 1) rainScore = 70;
-  else if (totalRain < 2) rainScore = 50;
-  else if (totalRain < 5) rainScore = 25;
-  else rainScore = 5;
+
+  // Consider both actual rain amount and precipitation probability
+  if (totalRain === 0 && !hasRain) {
+    // Adjust based on precipitation chance even if no rain predicted
+    if (avgPrecipChance < 10) rainScore = 100;
+    else if (avgPrecipChance < 20) rainScore = 95;
+    else if (avgPrecipChance < 30) rainScore = 90;
+    else if (avgPrecipChance < 40) rainScore = 85;
+    else rainScore = 80;
+  }
+  else if (totalRain < 0.5) {
+    rainScore = 85 - (avgPrecipChance / 10); // Reduce slightly based on precip chance
+  }
+  else if (totalRain < 1) {
+    rainScore = 70 - (avgPrecipChance / 15);
+  }
+  else if (totalRain < 2) {
+    rainScore = 50 - (avgPrecipChance / 20);
+  }
+  else if (totalRain < 5) {
+    rainScore = 25;
+  }
+  else {
+    rainScore = 5;
+  }
 
   let sunshineScore = 100;
   if (avgCloudCover < 20) sunshineScore = 100;
@@ -198,17 +228,82 @@ export function calculateGolfScore(weatherData: WeatherData[]): GolfWeatherScore
   else if (avgCloudCover < 80) sunshineScore = 50;
   else sunshineScore = 30;
 
-  const overallScore = Math.round(
+  // Calculate lightness/daylight modifier
+  let lightnessModifier = 1.0; // Default to no modification
+  let lightnessScore = 85; // Default score when no sunrise/sunset data
+
+  // Check if we have valid sunrise/sunset data
+  if (startHour !== undefined && sunrise && sunset && sunrise !== '' && sunset !== '') {
+    const sunriseHour = parseInt(sunrise.split('T')[1].split(':')[0]);
+    const sunsetHour = parseInt(sunset.split('T')[1].split(':')[0]);
+    const endHour = startHour + 5; // 5 hour round
+
+    // Calculate daylight hours available
+    const daylightHours = sunsetHour - sunriseHour;
+    const optimalStart = sunriseHour + 2; // Best to start 2 hours after sunrise
+    const optimalEnd = sunsetHour - 1; // Best to finish 1 hour before sunset
+
+    // Calculate daylight score and modifier (they should be the same)
+    if (startHour >= optimalStart && endHour <= optimalEnd) {
+      lightnessScore = 100; // Perfect daylight timing
+      lightnessModifier = 1.0;
+    } else if (startHour >= sunriseHour && endHour <= sunsetHour) {
+      // Fully in daylight but not optimal times
+      lightnessScore = 85;
+      lightnessModifier = 0.85;
+    } else if (startHour < sunriseHour && endHour > sunsetHour) {
+      // Playing entirely in darkness - absolutely terrible
+      lightnessScore = 0;
+      lightnessModifier = 0;
+    } else if (startHour < sunriseHour) {
+      // Starting before sunrise but finishing in daylight
+      const hoursBeforeSunrise = sunriseHour - startHour;
+      if (hoursBeforeSunrise >= 2) {
+        lightnessScore = 10; // Starting way too early
+        lightnessModifier = 0.1;
+      } else {
+        lightnessScore = 50; // Starting a bit early (shoulder period)
+        lightnessModifier = 0.5;
+      }
+    } else if (endHour > sunsetHour) {
+      // Starting in daylight but finishing after sunset
+      const hoursAfterSunset = endHour - sunsetHour;
+      if (hoursAfterSunset >= 2) {
+        lightnessScore = 20; // Finishing way too late
+        lightnessModifier = 0.2;
+      } else {
+        lightnessScore = 60; // Finishing a bit late (shoulder period)
+        lightnessModifier = 0.6;
+      }
+    }
+
+    // Additional penalty for very short winter days
+    if (daylightHours < 9) {
+      lightnessModifier *= 0.9; // 10% additional reduction for short winter days
+    }
+  }
+
+  // Calculate base score from weather conditions
+  const baseScore =
     tempScore * 0.25 +
     windScore * 0.25 +
     rainScore * 0.35 +
-    sunshineScore * 0.15
-  );
+    sunshineScore * 0.15;
+
+  // Apply daylight modifier - if it's dark, nothing else matters much
+  const overallScore = Math.round(baseScore * lightnessModifier);
 
   let recommendation: string;
   let emoji: string;
 
-  if (overallScore >= 90) {
+  // Special case for darkness
+  if (lightnessModifier === 0) {
+    recommendation = "Playing in the dark? Might as well go to the pub!";
+    emoji = "🌚🍺";
+  } else if (lightnessModifier <= 0.2) {
+    recommendation = "Finishing in darkness - this will be grim!";
+    emoji = "🌚⛳";
+  } else if (overallScore >= 90) {
     recommendation = "PERFECT CONDITIONS! We're going to have a ball";
     emoji = "⛳🌟";
   } else if (overallScore >= 75) {
@@ -233,6 +328,7 @@ export function calculateGolfScore(weatherData: WeatherData[]): GolfWeatherScore
     wind: Math.round(windScore),
     rain: Math.round(rainScore),
     sunshine: Math.round(sunshineScore),
+    lightness: Math.round(lightnessScore),
     overall: overallScore,
     recommendation,
     emoji

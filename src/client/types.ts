@@ -14,9 +14,7 @@ export interface WeatherData {
     speed: number;
     gust?: number;
   };
-  rain?: {
-    '3h'?: number;
-  };
+  rain?: number;
   clouds: {
     all: number;
   };
@@ -28,6 +26,7 @@ export interface GolfWeatherScore {
   wind: number;
   rain: number;
   sunshine: number;
+  lightness: number;
   overall: number;
   recommendation: string;
   emoji: string;

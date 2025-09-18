@@ -6,6 +6,7 @@ interface ScoreCardsProps {
     temperature: number;
     wind: number;
     rain: number;
+    lightness: number;
     overall: number;
   };
 }
@@ -24,7 +25,7 @@ function ScoreCards({ scores }: ScoreCardsProps) {
       <div className="score-card sunshine">
         <div className="score-header">
           <span className="score-icon">☀️</span>
-          <span className="score-label">Sunshine</span>
+          <span className="score-label">Cloudiness</span>
         </div>
         <div className="score-bar-container">
           <div
@@ -75,6 +76,20 @@ function ScoreCards({ scores }: ScoreCardsProps) {
           ></div>
         </div>
         <div className="score-value">{scores.rain}/100</div>
+      </div>
+
+      <div className="score-card lightness">
+        <div className="score-header">
+          <span className="score-icon">🌅</span>
+          <span className="score-label">Daylight</span>
+        </div>
+        <div className="score-bar-container">
+          <div
+            className="score-bar"
+            style={{ width: `${scores.lightness}%` }}
+          ></div>
+        </div>
+        <div className="score-value">{scores.lightness}/100</div>
       </div>
     </div>
   );

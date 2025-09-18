@@ -20,6 +20,7 @@ interface WeatherResult {
     wind: number;
     rain: number;
     overall: number;
+    lightness: number;
   };
   recommendation: {
     emoji: string;
@@ -65,7 +66,7 @@ function App() {
       const [hours] = startTime.split(':').map(Number);
 
       // Fetch weather data directly from client
-      const weatherData = await fetchWeatherForecast(
+      const { weatherData, sunrise, sunset } = await fetchWeatherForecast(
         selectedDate,
         selectedLocation.lat,
         selectedLocation.lon,
@@ -78,7 +79,7 @@ function App() {
       }
 
       // Calculate scores
-      const scores = calculateGolfScore(weatherData);
+      const scores = calculateGolfScore(weatherData, hours, sunrise, sunset);
 
       // Calculate averages
       const avgTemp = Math.round(weatherData.reduce((sum, w) => sum + w.main.temp, 0) / weatherData.length);
@@ -86,6 +87,7 @@ function App() {
       const conditions = weatherData[0].weather[0].description;
 
       // Create timeline
+      console.log(weatherData);
       const timeline = weatherData.map(data => {
         const date = new Date(data.dt * 1000);
         return {
@@ -114,6 +116,7 @@ function App() {
           temperature: scores.temperature,
           wind: scores.wind,
           rain: scores.rain,
+          lightness: scores.lightness,
           overall: scores.overall
         },
         recommendation: {
