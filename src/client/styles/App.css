@@ -261,9 +261,53 @@
 }
 
 .time-range {
+  display: block;
+  margin-top: 0.5rem;
   color: #666;
   font-size: 0.9rem;
   white-space: nowrap;
+}
+
+.round-length-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.round-length-select:hover {
+  border-color: #4CAF50;
+}
+
+.round-length-select:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.round-length-select-inline {
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  min-width: 120px;
+}
+
+.round-length-select-inline:hover {
+  border-color: #4CAF50;
+}
+
+.round-length-select-inline:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .location-card {
@@ -547,6 +591,109 @@
 
 .timeline-detail-value {
   font-weight: 600;
+}
+
+/* Inline Wind Direction in Timeline */
+.wind-direction-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.3rem;
+  padding: 0.1rem 0.3rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 4px;
+}
+
+/* Wind Gust Badge */
+.wind-gust-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.3rem;
+  padding: 0.1rem 0.3rem;
+  background: rgba(255, 152, 0, 0.15);
+  border-radius: 4px;
+}
+
+.timeline-hour.current .wind-gust-inline {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.gust-icon {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.gust-text {
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: #FF6B35;
+}
+
+.timeline-hour.current .gust-text {
+  color: white;
+}
+
+.timeline-hour.current .wind-direction-inline {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.wind-arrow {
+  display: inline-block;
+  color: #667eea;
+  font-size: 0.8rem;
+  transform-origin: center;
+}
+
+.timeline-hour.current .wind-arrow {
+  color: white;
+}
+
+.wind-dir-text {
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.timeline-hour.current .wind-dir-text {
+  color: white;
+}
+
+/* Inline Rain Chance in Timeline */
+.rain-chance-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: 0.3rem;
+  padding: 0.1rem 0.3rem;
+  background: rgba(33, 150, 243, 0.1);
+  border-radius: 4px;
+}
+
+.rain-chance-inline.high-chance {
+  background: rgba(244, 67, 54, 0.15);
+}
+
+.timeline-hour.current .rain-chance-inline {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.rain-drop {
+  font-size: 0.7rem;
+}
+
+.rain-chance-text {
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: #2196F3;
+}
+
+.rain-chance-inline.high-chance .rain-chance-text {
+  color: #F44336;
+}
+
+.timeline-hour.current .rain-chance-text {
+  color: white;
 }
 
 .timeline-rain-warning {

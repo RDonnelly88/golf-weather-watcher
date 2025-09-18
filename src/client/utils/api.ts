@@ -27,17 +27,18 @@ export async function fetchWeatherForecast(
   targetDate: Date,
   latitude: number,
   longitude: number,
-  startHour: number = 12
+  startHour: number = 12,
+  roundLength: number = 5
 ): Promise<{ weatherData: WeatherData[], sunrise: string, sunset: string }> {
   const url = `https://api.open-meteo.com/v1/forecast`;
   const dateStr = targetDate.toISOString().split('T')[0];
-  const endHour = startHour + 5; // 5 hour round of golf
+  const endHour = startHour + roundLength; // Dynamic round length
 
   try {
     const response = await fetch(url + '?' + new URLSearchParams({
       latitude: latitude.toString(),
       longitude: longitude.toString(),
-      hourly: 'temperature_2m,precipitation,rain,weathercode,cloudcover,windspeed_10m,windgusts_10m,precipitation_probability',
+      hourly: 'temperature_2m,precipitation,weathercode,cloudcover,windspeed_10m,windgusts_10m,winddirection_10m,precipitation_probability',
       daily: 'sunrise,sunset',
       start_date: dateStr,
       end_date: dateStr,
@@ -67,7 +68,7 @@ export async function fetchWeatherForecast(
           weatherDesc = 'foggy';
         } else if (weatherCode >= 51 && weatherCode <= 55) {
           // Drizzle codes - check actual rain amount
-          if (hourlyData.rain[i] > 0 || hourlyData.precipitation[i] > 0.2) {
+          if (hourlyData.precipitation[i] > 0.2) {
             weatherMain = 'Drizzle';
             weatherDesc = 'light drizzle';
           } else {
@@ -108,9 +109,10 @@ export async function fetchWeatherForecast(
           }],
           wind: {
             speed: hourlyData.windspeed_10m[i] / 3.6, // km/h to m/s
-            gust: hourlyData.windgusts_10m[i] / 3.6
+            gust: hourlyData.windgusts_10m[i] / 3.6,
+            direction: hourlyData.winddirection_10m[i] // degrees (0=N, 90=E, 180=S, 270=W)
           },
-          rain: hourlyData.rain?.[i] || hourlyData.precipitation?.[i] || 0,
+          rain: hourlyData.precipitation?.[i] || 0,
           clouds: {
             all: hourlyData.cloudcover[i]
           },
@@ -160,7 +162,7 @@ export async function fetchWeatherForecast(
   }
 }
 
-export function calculateGolfScore(weatherData: WeatherData[], startHour?: number, sunrise?: string, sunset?: string): GolfWeatherScore {
+export function calculateGolfScore(weatherData: WeatherData[], startHour?: number, sunrise?: string, sunset?: string, roundLength: number = 5): GolfWeatherScore {
   console.log('Weather data for scoring:', weatherData);
   const avgTemp = weatherData.reduce((sum, w) => sum + w.main.temp, 0) / weatherData.length;
   const avgWindSpeed = weatherData.reduce((sum, w) => sum + w.wind.speed, 0) / weatherData.length;
@@ -236,7 +238,7 @@ export function calculateGolfScore(weatherData: WeatherData[], startHour?: numbe
   if (startHour !== undefined && sunrise && sunset && sunrise !== '' && sunset !== '') {
     const sunriseHour = parseInt(sunrise.split('T')[1].split(':')[0]);
     const sunsetHour = parseInt(sunset.split('T')[1].split(':')[0]);
-    const endHour = startHour + 5; // 5 hour round
+    const endHour = startHour + roundLength; // Dynamic round length
 
     // Calculate daylight hours available
     const daylightHours = sunsetHour - sunriseHour;

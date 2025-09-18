@@ -13,6 +13,7 @@ export interface WeatherData {
   wind: {
     speed: number;
     gust?: number;
+    direction?: number;
   };
   rain?: number;
   clouds: {

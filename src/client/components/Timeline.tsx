@@ -4,6 +4,7 @@ interface TimelineHour {
   temperature: number;
   windSpeed: number;
   windGust: number | null;
+  windDirection: number;
   cloudCover: number;
   rainAmount: number;
   rainProbability: number;
@@ -17,14 +18,28 @@ interface TimelineProps {
 
 function Timeline({ timeline }: TimelineProps) {
   const getWeatherIcon = (hour: TimelineHour) => {
-    if (hour.conditions.toLowerCase().includes('rain')) return '🌧️';
-    if (hour.conditions.toLowerCase().includes('cloud')) {
+    const condition = hour.conditions.toLowerCase();
+
+    // Check for any precipitation first
+    if (condition.includes('rain') || condition.includes('drizzle')) return '🌧️';
+    if (condition.includes('snow')) return '❄️';
+    if (condition.includes('thunder')) return '⛈️';
+    if (condition.includes('fog')) return '🌫️';
+
+    // Then check cloud cover
+    if (condition.includes('cloud') || hour.cloudCover > 25) {
       if (hour.cloudCover > 75) return '☁️';
       if (hour.cloudCover > 50) return '⛅';
       return '🌤️';
     }
-    if (hour.conditions.toLowerCase().includes('fog')) return '🌫️';
+
     return '☀️';
+  };
+
+  const getCompassDirection = (degrees: number): string => {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const index = Math.round(((degrees % 360) / 45)) % 8;
+    return directions[index];
   };
 
   return (
@@ -42,7 +57,19 @@ function Timeline({ timeline }: TimelineProps) {
               </div>
               <div className="timeline-detail">
                 <span className="timeline-detail-icon">💨</span>
-                <span className="timeline-detail-value">{hour.windSpeed}-{hour.windGust || hour.windSpeed} mph</span>
+                <span className="timeline-detail-value">
+                  {hour.windSpeed} mph
+                  {hour.windGust && hour.windGust > hour.windSpeed && (
+                    <span className="wind-gust-inline">
+                      <span className="gust-icon">💨</span>
+                      <span className="gust-text">{hour.windGust} mph</span>
+                    </span>
+                  )}
+                  <span className="wind-direction-inline">
+                    <span className="wind-arrow" style={{ transform: `rotate(${hour.windDirection}deg)` }}>➤</span>
+                    <span className="wind-dir-text">{getCompassDirection(hour.windDirection)}</span>
+                  </span>
+                </span>
               </div>
               <div className="timeline-detail">
                 <span className="timeline-detail-icon">☁️</span>
@@ -50,7 +77,15 @@ function Timeline({ timeline }: TimelineProps) {
               </div>
               <div className="timeline-detail">
                 <span className="timeline-detail-icon">☔</span>
-                <span className="timeline-detail-value">{hour.rainAmount.toFixed(1)}mm/{hour.rainProbability || 0}%</span>
+                <span className="timeline-detail-value">
+                  {hour.rainAmount > 0 ? `${hour.rainAmount.toFixed(1)}mm` : 'No rain'}
+                  {hour.rainProbability > 0 && (
+                    <span className={`rain-chance-inline ${hour.rainProbability > 50 ? 'high-chance' : ''}`}>
+                      <span className="rain-drop">💧</span>
+                      <span className="rain-chance-text">{hour.rainProbability}%</span>
+                    </span>
+                  )}
+                </span>
               </div>
             </div>
           </div>

@@ -12,6 +12,8 @@ interface WeatherResult {
   weather: {
     temperature: number;
     wind: number;
+    windDirection?: number;
+    windGust?: number;
     conditions: string;
   };
   scores: {
@@ -32,6 +34,7 @@ interface WeatherResult {
     temperature: number;
     windSpeed: number;
     windGust: number | null;
+    windDirection: number;
     cloudCover: number;
     rainAmount: number;
     rainProbability: number;
@@ -48,6 +51,7 @@ function App() {
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date('2025-09-26'));
   const [startTime, setStartTime] = useState('12:00');
+  const [roundLength, setRoundLength] = useState(5); // Default 5 hours
   const [weatherData, setWeatherData] = useState<WeatherResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +74,8 @@ function App() {
         selectedDate,
         selectedLocation.lat,
         selectedLocation.lon,
-        hours
+        hours,
+        roundLength
       );
 
       if (weatherData.length === 0) {
@@ -79,11 +84,13 @@ function App() {
       }
 
       // Calculate scores
-      const scores = calculateGolfScore(weatherData, hours, sunrise, sunset);
+      const scores = calculateGolfScore(weatherData, hours, sunrise, sunset, roundLength);
 
       // Calculate averages
       const avgTemp = Math.round(weatherData.reduce((sum, w) => sum + w.main.temp, 0) / weatherData.length);
       const avgWind = Math.round(weatherData.reduce((sum, w) => sum + w.wind.speed * 2.237, 0) / weatherData.length); // m/s to mph
+      const avgWindDirection = Math.round(weatherData.reduce((sum, w) => sum + (w.wind.direction || 0), 0) / weatherData.length);
+      const maxWindGust = Math.max(...weatherData.map(w => w.wind.gust ? w.wind.gust * 2.237 : w.wind.speed * 2.237));
       const conditions = weatherData[0].weather[0].description;
 
       // Create timeline
@@ -96,8 +103,9 @@ function App() {
           temperature: Math.round(data.main.temp),
           windSpeed: Math.round(data.wind.speed * 2.237), // m/s to mph
           windGust: data.wind.gust ? Math.round(data.wind.gust * 2.237) : null,
+          windDirection: data.wind.direction || 0,
           cloudCover: data.clouds.all,
-          rainAmount: data.rain?.['3h'] || 0,
+          rainAmount: data.rain || 0,
           rainProbability: data.precipitationProbability || 0,
           conditions: data.weather[0].main,
           description: data.weather[0].description
@@ -109,6 +117,8 @@ function App() {
         weather: {
           temperature: avgTemp,
           wind: avgWind,
+          windDirection: avgWindDirection,
+          windGust: maxWindGust,
           conditions: conditions
         },
         scores: {
@@ -135,7 +145,7 @@ function App() {
 
   const endTime = (() => {
     const [hours, minutes] = startTime.split(':').map(Number);
-    const endHour = (hours + 5) % 24;
+    const endHour = (hours + roundLength) % 24;
     return `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   })();
 
@@ -187,7 +197,7 @@ function App() {
           </div>
 
           <div className="control-card">
-            <label>Tee Time</label>
+            <label>Tee Time & Round Length</label>
             <div className="time-inputs">
               <input
                 type="time"
@@ -195,8 +205,18 @@ function App() {
                 onChange={(e) => setStartTime(e.target.value)}
                 className="time-input"
               />
-              <span className="time-range">5 hour round until {endTime}</span>
+              <select
+                value={roundLength}
+                onChange={(e) => setRoundLength(Number(e.target.value))}
+                className="round-length-select-inline"
+              >
+                <option value="3">3 hours</option>
+                <option value="4">4 hours</option>
+                <option value="5">5 hours</option>
+                <option value="6">6 hours</option>
+              </select>
             </div>
+            <span className="time-range">Round ends at {endTime}</span>
           </div>
         </div>
 
@@ -220,6 +240,7 @@ function App() {
         {weatherData && !loading && (
           <div className="results-container">
             <Timeline timeline={weatherData.timeline} />
+
             <ScoreCards scores={weatherData.scores} />
 
             <div className="overall-score-container">
