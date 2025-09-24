@@ -38,7 +38,7 @@ export async function fetchWeatherForecast(
     const response = await fetch(url + '?' + new URLSearchParams({
       latitude: latitude.toString(),
       longitude: longitude.toString(),
-      hourly: 'temperature_2m,precipitation,weathercode,cloudcover,windspeed_10m,windgusts_10m,winddirection_10m,precipitation_probability',
+      hourly: 'temperature_2m,precipitation,weathercode,cloudcover,windspeed_10m,windgusts_10m,winddirection_10m,precipitation_probability,uv_index,apparent_temperature,relativehumidity_2m,dewpoint_2m,visibility,pressure_msl,surface_pressure',
       daily: 'sunrise,sunset',
       start_date: dateStr,
       end_date: dateStr,
@@ -102,8 +102,10 @@ export async function fetchWeatherForecast(
           dt: new Date(hourlyData.time[i]).getTime() / 1000,
           main: {
             temp: hourlyData.temperature_2m[i],
-            feels_like: hourlyData.temperature_2m[i] - (hourlyData.windspeed_10m[i] / 10),
-            humidity: 70
+            feels_like: hourlyData.apparent_temperature?.[i] || hourlyData.temperature_2m[i] - (hourlyData.windspeed_10m[i] / 10),
+            humidity: hourlyData.relativehumidity_2m?.[i] || 70,
+            pressure: hourlyData.pressure_msl?.[i] || 1013,
+            dewPoint: hourlyData.dewpoint_2m?.[i]
           },
           weather: [{
             id: weatherCode,
@@ -119,7 +121,10 @@ export async function fetchWeatherForecast(
           clouds: {
             all: hourlyData.cloudcover[i]
           },
-          precipitationProbability: hourlyData.precipitation_probability?.[i] || 0
+          precipitationProbability: hourlyData.precipitation_probability?.[i] || 0,
+          uvIndex: hourlyData.uv_index?.[i] || 0,
+          visibility: hourlyData.visibility?.[i] || 10000,
+          surfacePressure: hourlyData.surface_pressure?.[i] || 1013
         });
       }
     }

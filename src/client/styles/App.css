@@ -536,19 +536,21 @@
   background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
   border-radius: 12px;
   padding: 0.75rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
   cursor: pointer;
+  position: relative;
 }
 
 .timeline-hour:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.timeline-hour.current {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: white;
+.timeline-hour.expanded {
+  transform: translateY(0);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
+
 
 .timeline-time {
   font-size: 1.1rem;
@@ -558,9 +560,23 @@
   color: #333;
 }
 
-.timeline-hour.current .timeline-time {
-  color: white;
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
+
+.expand-indicator {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  transition: transform 0.3s ease;
+}
+
+.timeline-hour:hover .expand-indicator {
+  opacity: 1;
+}
+
 
 .timeline-icon {
   font-size: 1.8rem;
@@ -580,9 +596,6 @@
   color: #666;
 }
 
-.timeline-hour.current .timeline-detail {
-  color: white;
-}
 
 .timeline-detail-icon {
   width: 20px;
@@ -615,9 +628,6 @@
   border-radius: 4px;
 }
 
-.timeline-hour.current .wind-gust-inline {
-  background: rgba(255, 255, 255, 0.25);
-}
 
 .gust-icon {
   font-size: 0.7rem;
@@ -630,13 +640,6 @@
   color: #FF6B35;
 }
 
-.timeline-hour.current .gust-text {
-  color: white;
-}
-
-.timeline-hour.current .wind-direction-inline {
-  background: rgba(255, 255, 255, 0.2);
-}
 
 .wind-arrow {
   display: inline-block;
@@ -645,9 +648,6 @@
   transform-origin: center;
 }
 
-.timeline-hour.current .wind-arrow {
-  color: white;
-}
 
 .wind-dir-text {
   font-size: 0.65rem;
@@ -655,9 +655,6 @@
   color: #667eea;
 }
 
-.timeline-hour.current .wind-dir-text {
-  color: white;
-}
 
 /* Inline Rain Chance in Timeline */
 .rain-chance-inline {
@@ -674,9 +671,6 @@
   background: rgba(244, 67, 54, 0.15);
 }
 
-.timeline-hour.current .rain-chance-inline {
-  background: rgba(255, 255, 255, 0.2);
-}
 
 .rain-drop {
   font-size: 0.7rem;
@@ -692,9 +686,88 @@
   color: #F44336;
 }
 
-.timeline-hour.current .rain-chance-text {
+
+/* Expanded content styles */
+.timeline-expanded {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  animation: slideDown 0.3s ease;
+}
+
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 800px;
+  }
+}
+
+.expanded-section {
+  margin-bottom: 1rem;
+}
+
+.expanded-section h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #666;
+}
+
+
+.expanded-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.expanded-label {
+  font-weight: 500;
+  color: #666;
+  min-width: 100px;
+}
+
+
+.expanded-value {
+  font-weight: 600;
+  color: #333;
+}
+
+
+.comfort-note, .humidity-note, .dewpoint-note, .visibility-note, .pressure-note, .uv-warning {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+
+.uv-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.uv-value {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
   color: white;
 }
+
+.uv-label {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+
 
 .timeline-rain-warning {
   background: #FFE5E5;

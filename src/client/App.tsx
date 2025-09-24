@@ -40,6 +40,12 @@ interface WeatherResult {
     rainProbability: number;
     conditions: string;
     description: string;
+    feelsLike: number;
+    humidity: number;
+    pressure: number;
+    dewPoint: number | null;
+    uvIndex: number;
+    visibility: number;
   }>;
 }
 
@@ -108,7 +114,13 @@ function App() {
           rainAmount: data.rain || 0,
           rainProbability: data.precipitationProbability || 0,
           conditions: data.weather[0].main,
-          description: data.weather[0].description
+          description: data.weather[0].description,
+          feelsLike: Math.round(data.main.feels_like),
+          humidity: Math.round(data.main.humidity),
+          pressure: Math.round(data.main.pressure || 1013),
+          dewPoint: data.main.dewPoint ? Math.round(data.main.dewPoint) : null,
+          uvIndex: Math.round(data.uvIndex || 0),
+          visibility: Math.round((data.visibility || 10000) / 1000) // Convert to km
         };
       });
 

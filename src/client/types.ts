@@ -4,6 +4,8 @@ export interface WeatherData {
     temp: number;
     feels_like: number;
     humidity: number;
+    pressure?: number;
+    dewPoint?: number;
   };
   weather: Array<{
     id: number;
@@ -20,6 +22,9 @@ export interface WeatherData {
     all: number;
   };
   precipitationProbability?: number;
+  uvIndex?: number;
+  visibility?: number;
+  surfacePressure?: number;
 }
 
 export interface GolfWeatherScore {
