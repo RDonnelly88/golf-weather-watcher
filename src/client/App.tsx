@@ -2,6 +2,7 @@ import { useState } from 'react';
 import LocationSearch from './components/LocationSearch';
 import Timeline from './components/Timeline';
 import ScoreCards from './components/ScoreCards';
+import OverallScore from './components/OverallScore';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import './styles/App.css';
@@ -11,7 +12,9 @@ interface WeatherResult {
   location: string;
   weather: {
     temperature: number;
+    temperatureRaw?: number;
     wind: number;
+    windRaw?: number;
     windDirection?: number;
     windGust?: number;
     conditions: string;
@@ -47,6 +50,8 @@ interface WeatherResult {
     uvIndex: number;
     visibility: number;
   }>;
+  sunriseHour?: number;
+  sunsetHour?: number;
 }
 
 function App() {
@@ -92,12 +97,21 @@ function App() {
       // Calculate scores
       const scores = calculateGolfScore(weatherData, hours, sunrise, sunset, roundLength);
 
-      // Calculate averages
-      const avgTemp = Math.round(weatherData.reduce((sum, w) => sum + w.main.temp, 0) / weatherData.length);
-      const avgWind = Math.round(weatherData.reduce((sum, w) => sum + w.wind.speed, 0) / weatherData.length); // m/s to mph
+      // Calculate averages - keep raw values for scoring, round for display
+      const avgTempRaw = weatherData.reduce((sum, w) => sum + w.main.temp, 0) / weatherData.length;
+      const avgTemp = Math.round(avgTempRaw);
+      const avgWindRaw = weatherData.reduce((sum, w) => sum + w.wind.speed, 0) / weatherData.length;
+      const avgWind = Math.round(avgWindRaw); // m/s to mph
       const avgWindDirection = Math.round(weatherData.reduce((sum, w) => sum + (w.wind.direction || 0), 0) / weatherData.length);
       const maxWindGust = Math.max(...weatherData.map(w => w.wind.gust ? w.wind.gust : w.wind.speed ));
+      const avgCloudCover = Math.round(weatherData.reduce((sum, w) => sum + w.clouds.all, 0) / weatherData.length);
+      const totalRain = weatherData.reduce((sum, w) => sum + (w.rain || 0), 0);
+      const avgPrecipChance = Math.round(weatherData.reduce((sum, w) => sum + (w.precipitationProbability || 0), 0) / weatherData.length);
       const conditions = weatherData[0].weather[0].description;
+
+      // Parse sunrise/sunset hours for daylight scoring
+      const sunriseHour = sunrise ? parseInt(sunrise.split('T')[1].split(':')[0]) : undefined;
+      const sunsetHour = sunset ? parseInt(sunset.split('T')[1].split(':')[0]) : undefined;
 
       // Create timeline
       console.log(weatherData);
@@ -128,7 +142,9 @@ function App() {
         location: selectedLocation.name,
         weather: {
           temperature: avgTemp,
+          temperatureRaw: avgTempRaw,
           wind: avgWind,
+          windRaw: avgWindRaw,
           windDirection: avgWindDirection,
           windGust: maxWindGust,
           conditions: conditions
@@ -145,7 +161,9 @@ function App() {
           emoji: scores.emoji,
           text: scores.recommendation
         },
-        timeline: timeline
+        timeline: timeline,
+        sunriseHour: sunriseHour,
+        sunsetHour: sunsetHour
       });
     } catch (err) {
       setError('Failed to fetch weather data');
@@ -253,39 +271,29 @@ function App() {
           <div className="results-container">
             <Timeline timeline={weatherData.timeline} />
 
-            <ScoreCards scores={weatherData.scores} />
+            <ScoreCards
+              scores={weatherData.scores}
+              weatherData={{
+                avgTemp: weatherData.weather.temperature,
+                avgTempRaw: weatherData.weather.temperatureRaw,
+                avgWindSpeed: weatherData.weather.wind,
+                avgWindRaw: weatherData.weather.windRaw,
+                maxWindGust: weatherData.weather.windGust,
+                avgCloudCover: weatherData.timeline.reduce((sum, t) => sum + t.cloudCover, 0) / weatherData.timeline.length,
+                totalRain: weatherData.timeline.reduce((sum, t) => sum + t.rainAmount, 0),
+                avgPrecipChance: weatherData.timeline.reduce((sum, t) => sum + t.rainProbability, 0) / weatherData.timeline.length,
+                startHour: parseInt(startTime.split(':')[0]),
+                endHour: parseInt(startTime.split(':')[0]) + roundLength,
+                sunriseHour: weatherData.sunriseHour,
+                sunsetHour: weatherData.sunsetHour
+              }}
+            />
 
-            <div className="overall-score-container">
-              <div className="overall-score-ring">
-                <svg viewBox="0 0 200 200">
-                  <defs>
-                    <linearGradient id="scoreGradient">
-                      <stop offset="0%" stopColor={weatherData.scores.overall >= 75 ? '#4CAF50' : weatherData.scores.overall >= 50 ? '#FFC107' : '#FF5722'} />
-                      <stop offset="100%" stopColor={weatherData.scores.overall >= 75 ? '#8BC34A' : weatherData.scores.overall >= 50 ? '#FF9800' : '#F44336'} />
-                    </linearGradient>
-                  </defs>
-                  <circle cx="100" cy="100" r="90" className="score-ring-bg"></circle>
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="90"
-                    className="score-ring-fill"
-                    style={{
-                      strokeDashoffset: 565 - (weatherData.scores.overall / 100) * 565
-                    }}
-                  ></circle>
-                </svg>
-                <div className="overall-score-content">
-                  <div className="overall-score-number">{weatherData.scores.overall}</div>
-                  <div className="overall-score-label">Golf Score</div>
-                </div>
-              </div>
-
-              <div className="recommendation-box">
-                <div className="recommendation-emoji">{weatherData.recommendation.emoji}</div>
-                <div className="recommendation-text">{weatherData.recommendation.text}</div>
-              </div>
-            </div>
+            <OverallScore
+              score={weatherData.scores.overall}
+              scores={weatherData.scores}
+              recommendation={weatherData.recommendation}
+            />
           </div>
         )}
       </div>

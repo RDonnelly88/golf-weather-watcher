@@ -25,7 +25,7 @@ interface TimelineProps {
 }
 
 function Timeline({ timeline }: TimelineProps) {
-  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
 
   const getWeatherIcon = (hour: TimelineHour) => {
     const condition = hour.conditions.toLowerCase();
@@ -68,7 +68,15 @@ function Timeline({ timeline }: TimelineProps) {
   };
 
   const toggleCard = (index: number) => {
-    setExpandedCard(expandedCard === index ? null : index);
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -76,7 +84,7 @@ function Timeline({ timeline }: TimelineProps) {
       <h2>Your Round Timeline</h2>
       <div className="timeline">
         {timeline.map((hour, index) => {
-          const isExpanded = expandedCard === index;
+          const isExpanded = expandedCards.has(index);
           const uvInfo = getUVCategory(hour.uvIndex);
 
           return (
