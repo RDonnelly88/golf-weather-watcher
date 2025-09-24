@@ -42,7 +42,10 @@ export async function fetchWeatherForecast(
       daily: 'sunrise,sunset',
       start_date: dateStr,
       end_date: dateStr,
-      timezone: 'auto'
+      timezone: 'auto',
+      wind_speed_unit: 'mph',
+
+
     }));
 
     const data = await response.json();
@@ -108,8 +111,8 @@ export async function fetchWeatherForecast(
             description: weatherDesc
           }],
           wind: {
-            speed: hourlyData.windspeed_10m[i] / 3.6, // km/h to m/s
-            gust: hourlyData.windgusts_10m[i] / 3.6,
+            speed: hourlyData.windspeed_10m[i],
+            gust: hourlyData.windgusts_10m[i],
             direction: hourlyData.winddirection_10m[i] // degrees (0=N, 90=E, 180=S, 270=W)
           },
           rain: hourlyData.precipitation?.[i] || 0,

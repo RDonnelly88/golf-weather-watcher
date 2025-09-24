@@ -88,9 +88,9 @@ function App() {
 
       // Calculate averages
       const avgTemp = Math.round(weatherData.reduce((sum, w) => sum + w.main.temp, 0) / weatherData.length);
-      const avgWind = Math.round(weatherData.reduce((sum, w) => sum + w.wind.speed * 2.237, 0) / weatherData.length); // m/s to mph
+      const avgWind = Math.round(weatherData.reduce((sum, w) => sum + w.wind.speed, 0) / weatherData.length); // m/s to mph
       const avgWindDirection = Math.round(weatherData.reduce((sum, w) => sum + (w.wind.direction || 0), 0) / weatherData.length);
-      const maxWindGust = Math.max(...weatherData.map(w => w.wind.gust ? w.wind.gust * 2.237 : w.wind.speed * 2.237));
+      const maxWindGust = Math.max(...weatherData.map(w => w.wind.gust ? w.wind.gust : w.wind.speed ));
       const conditions = weatherData[0].weather[0].description;
 
       // Create timeline
@@ -101,8 +101,8 @@ function App() {
           time: date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
           hour: date.getHours(),
           temperature: Math.round(data.main.temp),
-          windSpeed: Math.round(data.wind.speed * 2.237), // m/s to mph
-          windGust: data.wind.gust ? Math.round(data.wind.gust * 2.237) : null,
+          windSpeed: Math.round(data.wind.speed),
+          windGust: data.wind.gust ? Math.round(data.wind.gust) : null,
           windDirection: data.wind.direction || 0,
           cloudCover: data.clouds.all,
           rainAmount: data.rain || 0,
