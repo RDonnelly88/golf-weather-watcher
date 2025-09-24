@@ -200,7 +200,7 @@ export function calculateGolfScore(weatherData: WeatherData[], startHour?: numbe
   else windScore = 10;
 
   // Only penalize for gusts if they're significantly high (>10 m/s) AND substantially higher than avg wind
-  if (maxWindGust > 10 && maxWindGust > avgWindSpeed * 2) {
+  if (maxWindGust > 10 && maxWindGust > avgWindSpeed + 10) {
     windScore *= 0.8;
   }
 
