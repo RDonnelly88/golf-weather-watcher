@@ -170,7 +170,7 @@ function ScoreCards({ scores, weatherData }: ScoreCardsProps) {
 
     return [
       { range: 'Optimal daylight', score: 100, active: start >= sunrise + 2 && end <= sunset - 1 },
-      { range: 'Full daylight', score: 85, active: start >= sunrise && end <= sunset && !(start >= sunrise + 2 && end <= sunset - 1) },
+      { range: 'Shoulder hours', score: 85, active: start >= sunrise && end <= sunset && !(start >= sunrise + 2 && end <= sunset - 1) },
       { range: 'Early start', score: 50, active: start < sunrise && sunrise - start < 2 && end <= sunset },
       { range: 'Late finish', score: 60, active: start >= sunrise && end > sunset && end - sunset < 2 },
       { range: 'Very early', score: 10, active: start < sunrise && sunrise - start >= 2 },
