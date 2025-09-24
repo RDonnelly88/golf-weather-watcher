@@ -1,8 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { geocodeLocation } from '../utils/api';
 
 interface LocationSearchProps {
   onLocationSelect: (location: { name: string; lat: number; lon: number }) => void;
+}
+
+interface SearchResult {
+  place_id: string;
+  display_name: string;
+  lat: string;
+  lon: string;
+  type?: string;
+  class?: string;
 }
 
 const POPULAR_COURSES = [
@@ -14,103 +22,226 @@ const POPULAR_COURSES = [
 
 function LocationSearch({ onLocationSelect }: LocationSearchProps) {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const searchTimeout = useRef<NodeJS.Timeout>();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Set default location
     onLocationSelect(POPULAR_COURSES[0]);
   }, []);
 
-  const searchLocation = async (searchQuery: string) => {
-    if (searchQuery.length < 3) return;
+  useEffect(() => {
+    // Handle clicks outside dropdown
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const searchLocations = async (searchQuery: string) => {
+    if (searchQuery.length < 2) {
+      setResults([]);
+      return;
+    }
 
     setIsSearching(true);
-    const result = await geocodeLocation(searchQuery);
 
-    if (result) {
-      onLocationSelect({
-        name: result.display_name.split(',').slice(0, 3).join(','),
-        lat: result.lat,
-        lon: result.lon
-      });
-      setQuery('');
-      setShowSuggestions(false);
-    } else {
-      alert('Location not found. Please try another search.');
+    try {
+      // Search for both golf courses and general locations
+      const golfQuery = searchQuery.includes('golf') ? searchQuery : `${searchQuery} golf course`;
+
+      const [golfResponse, generalResponse] = await Promise.all([
+        fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(golfQuery)}&format=json&limit=3`
+        ),
+        fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5`
+        )
+      ]);
+
+      const golfData = await golfResponse.json();
+      const generalData = await generalResponse.json();
+
+      // Combine results, prioritizing golf courses
+      const allResults = [...golfData, ...generalData];
+
+      // Remove duplicates based on place_id
+      const uniqueResults = allResults.reduce((acc: SearchResult[], current: SearchResult) => {
+        const exists = acc.find(item => item.place_id === current.place_id);
+        if (!exists) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+
+      setResults(uniqueResults.slice(0, 8)); // Limit to 8 results
+      setShowDropdown(true);
+      setHighlightedIndex(-1);
+    } catch (error) {
+      console.error('Search error:', error);
+      setResults([]);
+    } finally {
+      setIsSearching(false);
     }
-    setIsSearching(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
-    setShowSuggestions(value.length > 0);
 
     // Clear existing timeout
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
 
-    // Search after user stops typing for 1 second
-    if (value.length >= 3) {
-      searchTimeout.current = setTimeout(() => {
-        searchLocation(value);
-      }, 1000);
-    }
+    // Search after user stops typing for 500ms
+    searchTimeout.current = setTimeout(() => {
+      searchLocations(value);
+    }, 500);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && query.length >= 3) {
-      if (searchTimeout.current) {
-        clearTimeout(searchTimeout.current);
-      }
-      searchLocation(query);
-    }
+  const selectLocation = (result: SearchResult) => {
+    const name = result.display_name.split(',').slice(0, 3).join(',');
+    onLocationSelect({
+      name,
+      lat: parseFloat(result.lat),
+      lon: parseFloat(result.lon)
+    });
+    setQuery('');
+    setResults([]);
+    setShowDropdown(false);
+    setHighlightedIndex(-1);
   };
 
   const selectPopularCourse = (course: typeof POPULAR_COURSES[0]) => {
     onLocationSelect(course);
     setQuery('');
-    setShowSuggestions(false);
+    setResults([]);
+    setShowDropdown(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showDropdown) return;
+
+    const totalItems = query ? results.length : POPULAR_COURSES.length;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev + 1) % totalItems);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => (prev - 1 + totalItems) % totalItems);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0) {
+          if (query && results[highlightedIndex]) {
+            selectLocation(results[highlightedIndex]);
+          } else if (!query && POPULAR_COURSES[highlightedIndex]) {
+            selectPopularCourse(POPULAR_COURSES[highlightedIndex]);
+          }
+        }
+        break;
+      case 'Escape':
+        setShowDropdown(false);
+        setHighlightedIndex(-1);
+        break;
+    }
+  };
+
+  const getLocationIcon = (result: SearchResult) => {
+    const displayName = result.display_name.toLowerCase();
+    if (displayName.includes('golf') || displayName.includes('country club')) {
+      return '⛳';
+    } else if (result.class === 'tourism' || result.type === 'attraction') {
+      return '🏛️';
+    } else if (result.class === 'place' && (result.type === 'city' || result.type === 'town')) {
+      return '🏙️';
+    }
+    return '📍';
+  };
+
+  const formatDisplayName = (displayName: string) => {
+    const parts = displayName.split(',');
+    if (parts.length > 3) {
+      return parts.slice(0, 3).join(',');
+    }
+    return displayName;
   };
 
   return (
-    <div className="location-search">
+    <div className="location-search" ref={dropdownRef}>
       <div className="search-input-wrapper">
         <input
-          ref={inputRef}
           type="text"
           className="location-input"
-          placeholder="Search for any golf course or city..."
+          placeholder="Search for golf course or city..."
           value={query}
           onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setShowDropdown(true)}
         />
         {isSearching && <span className="searching-indicator">🔍</span>}
       </div>
 
-      {showSuggestions && !query && (
-        <div className="suggestions-dropdown">
-          <div className="suggestions-header">Popular Golf Courses</div>
-          {POPULAR_COURSES.map(course => (
-            <div
-              key={course.name}
-              className="suggestion-item"
-              onClick={() => selectPopularCourse(course)}
-            >
-              ⛳ {course.name}
-            </div>
-          ))}
-        </div>
-      )}
+      {showDropdown && (
+        <div className="search-dropdown">
+          {!query && (
+            <>
+              <div className="dropdown-header">Popular Golf Courses</div>
+              {POPULAR_COURSES.map((course, index) => (
+                <div
+                  key={course.name}
+                  className={`dropdown-item ${highlightedIndex === index ? 'highlighted' : ''}`}
+                  onClick={() => selectPopularCourse(course)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  <span className="location-icon">⛳</span>
+                  <span className="location-name">{course.name}</span>
+                </div>
+              ))}
+            </>
+          )}
 
-      {query.length > 0 && query.length < 3 && (
-        <div className="search-hint">Type at least 3 characters to search...</div>
+          {query && results.length > 0 && (
+            <>
+              <div className="dropdown-header">Search Results</div>
+              {results.map((result, index) => (
+                <div
+                  key={result.place_id}
+                  className={`dropdown-item ${highlightedIndex === index ? 'highlighted' : ''}`}
+                  onClick={() => selectLocation(result)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  <span className="location-icon">{getLocationIcon(result)}</span>
+                  <span className="location-name">{formatDisplayName(result.display_name)}</span>
+                </div>
+              ))}
+            </>
+          )}
+
+          {query && results.length === 0 && !isSearching && (
+            <div className="dropdown-empty">
+              No locations found for "{query}"
+            </div>
+          )}
+
+          {query && isSearching && (
+            <div className="dropdown-loading">
+              Searching...
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
