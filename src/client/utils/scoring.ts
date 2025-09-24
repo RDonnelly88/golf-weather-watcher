@@ -151,7 +151,7 @@ export function calculateRainScore(rainAmount: number, precipChance: number): Sc
 
   // Apply probability adjustment for light rain
   let adjustment = 0;
-  if (rainAmount < 2 && precipChance > 0) {
+  if (precipChance > 0) {
     adjustment = rainAmount < 0.5 ? precipChance / 10 : rainAmount < 1 ? precipChance / 15 : precipChance / 20;
     finalScore = Math.round(threshold.score - adjustment);
 
