@@ -60,7 +60,7 @@ function App() {
     lat: 56.3398,
     lon: -2.7967
   });
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date('2025-09-26'));
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState('12:00');
   const [roundLength, setRoundLength] = useState(5); // Default 5 hours
   const [weatherData, setWeatherData] = useState<WeatherResult | null>(null);
@@ -219,10 +219,13 @@ function App() {
             <DatePicker
               selected={selectedDate}
               onChange={(date) => date && setSelectedDate(date)}
-              minDate={new Date()}
+              minDate={new Date('1940-01-01')}
               maxDate={new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)}
               dateFormat="MMMM d, yyyy"
               className="date-picker"
+              showYearDropdown
+              scrollableYearDropdown
+              yearDropdownItemNumber={100}
             />
           </div>
 

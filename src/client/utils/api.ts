@@ -31,9 +31,30 @@ export async function fetchWeatherForecast(
   startHour: number = 12,
   roundLength: number = 5
 ): Promise<{ weatherData: WeatherData[], sunrise: string, sunset: string }> {
-  const url = `https://api.open-meteo.com/v1/forecast`;
   const dateStr = targetDate.toISOString().split('T')[0];
   const endHour = startHour + roundLength; // Dynamic round length
+
+  // Determine which API to use based on date
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+  const daysDiff = Math.floor((targetDateOnly.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  let url: string;
+  let isHistorical = false;
+
+  if (daysDiff < -5) {
+    // Use historical weather API for actual past weather (what really happened)
+    // This uses reanalysis data combining observations from weather stations, satellites, etc.
+    url = `https://archive-api.open-meteo.com/v1/archive`;
+    isHistorical = true;
+  } else {
+    // Use regular forecast API for dates within 5 days in the past up to 15 days in the future
+    url = `https://api.open-meteo.com/v1/forecast`;
+  }
+
+  // Log which API is being used
+  console.log(`Using ${isHistorical ? 'Historical Weather (actual past weather)' : 'Forecast'} API for ${dateStr}`);
 
   try {
     const response = await fetch(url + '?' + new URLSearchParams({
@@ -50,6 +71,13 @@ export async function fetchWeatherForecast(
     }));
 
     const data = await response.json();
+
+    // Check for API errors
+    if (!response.ok || data.error) {
+      console.error('Weather API error:', data.reason || data.error || 'Unknown error');
+      throw new Error(data.reason || data.error || 'Failed to fetch weather data');
+    }
+
     const hourlyData = data.hourly;
     const weatherData: WeatherData[] = [];
 
