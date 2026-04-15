@@ -61,8 +61,8 @@ function App() {
     lon: -2.7967
   });
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [startTime, setStartTime] = useState('12:00');
-  const [roundLength, setRoundLength] = useState(5); // Default 5 hours
+  const [startTime, setStartTime] = useState('13:00');
+  const [roundLength, setRoundLength] = useState(3); // Default 5 hours
   const [weatherData, setWeatherData] = useState<WeatherResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -242,8 +242,8 @@ function App() {
                 value={roundLength}
                 onChange={(e) => setRoundLength(Number(e.target.value))}
                 className="round-length-select-inline"
-              >
-                <option value="3">3 hours</option>
+              >  
+                <option value="2">2 hours</option>
                 <option value="4">4 hours</option>
                 <option value="5">5 hours</option>
                 <option value="6">6 hours</option>
