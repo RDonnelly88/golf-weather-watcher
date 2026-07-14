@@ -15,6 +15,7 @@ interface SearchResult {
 
 const POPULAR_COURSES = [
   { name: 'St Andrews, Scotland', lat: 56.3398, lon: -2.7967 },
+  { name: 'Trump International Golf Links, Scotland', lat: 57.27393, lon: -2.03299 },
   { name: 'Mearns Castle, Scotland', lat: 55.7860, lon: -4.3090 },
   { name: 'Pebble Beach, California', lat: 36.5686, lon: -121.9490 },
   { name: 'Augusta National, Georgia', lat: 33.5031, lon: -82.0197 },
@@ -28,11 +29,6 @@ function LocationSearch({ onLocationSelect }: LocationSearchProps) {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const searchTimeout = useRef<NodeJS.Timeout>();
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Set default location
-    onLocationSelect(POPULAR_COURSES[0]);
-  }, []);
 
   useEffect(() => {
     // Handle clicks outside dropdown

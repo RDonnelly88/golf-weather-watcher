@@ -1,5 +1,12 @@
 @import url('react-datepicker/dist/react-datepicker.css');
 
+:root {
+  --trump-gold: #D4AF37;
+  --trump-gold-light: #FFD700;
+  --trump-navy: #002868;
+  --trump-red: #BF0A30;
+}
+
 .app {
   min-height: 100vh;
   position: relative;
@@ -132,6 +139,15 @@
   animation: flutter 2s ease-in-out infinite;
 }
 
+.pole-flag {
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 44px;
+  height: 25px;
+  animation: flutter 2s ease-in-out infinite;
+}
+
 @keyframes flutter {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(5px); }
@@ -196,9 +212,10 @@
 
 .title-line2 {
   font-size: 2rem;
-  color: #FFD700;
+  color: var(--trump-gold-light);
   letter-spacing: 2px;
 }
+
 
 .controls-section {
   display: grid;
@@ -1236,11 +1253,6 @@
   border-radius: 15px;
 }
 
-.recommendation-emoji {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-}
-
 .recommendation-text {
   font-size: 1.2rem;
   font-weight: 600;
@@ -1266,6 +1278,53 @@
   animation: golfWalk 15s linear infinite;
 }
 
+.golfer-animation .golfer {
+  position: relative;
+  display: inline-block;
+}
+
+.maga-cap-graphic {
+  position: absolute;
+  top: -0.85rem;
+  left: -0.05rem;
+  width: 1.7rem;
+  height: 1.1rem;
+  transform: rotate(-12deg);
+  z-index: 2;
+}
+
+.maga-cap-crown {
+  position: absolute;
+  top: 0;
+  left: 0.2rem;
+  width: 1.15rem;
+  height: 0.8rem;
+  background: var(--trump-red);
+  border-radius: 50% 50% 8% 8% / 65% 65% 8% 8%;
+  box-shadow: inset -2px -2px 3px rgba(0,0,0,0.25);
+}
+
+.maga-cap-patch {
+  position: absolute;
+  top: 0.22rem;
+  left: 0.48rem;
+  width: 0.55rem;
+  height: 0.32rem;
+  background: #f5f5f5;
+  border-radius: 1px;
+}
+
+.maga-cap-brim {
+  position: absolute;
+  bottom: -0.02rem;
+  left: -0.05rem;
+  width: 1.5rem;
+  height: 0.35rem;
+  background: var(--trump-red);
+  filter: brightness(0.82);
+  border-radius: 0 0 60% 60% / 0 0 100% 100%;
+}
+
 @keyframes golfWalk {
   to {
     transform: translateX(calc(100vw + 100px));
@@ -1276,4 +1335,438 @@
   .title-line1 { font-size: 2rem; }
   .title-line2 { font-size: 1.5rem; }
   .controls-section { grid-template-columns: 1fr; }
+}
+
+/* ===== Trump International theme — only active when that course is selected ===== */
+
+.tagline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  color: var(--trump-gold-light);
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 1rem;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+  animation: taglinePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes taglinePulse {
+  0%, 100% { text-shadow: 1px 1px 3px rgba(0,0,0,0.5), 0 0 6px rgba(255, 215, 0, 0.3); }
+  50% { text-shadow: 1px 1px 3px rgba(0,0,0,0.5), 0 0 16px rgba(255, 215, 0, 0.8); }
+}
+
+.tagline-flag {
+  width: 28px;
+  height: auto;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  animation: flagWave 3s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+.pole-flag,
+.bg-flag {
+  border-radius: 2px;
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.35);
+  animation: flagWave 3s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+@keyframes flagWave {
+  0%, 100% { transform: skewY(0deg) scaleX(1); }
+  25% { transform: skewY(2deg) scaleX(0.98); }
+  50% { transform: skewY(-1.5deg) scaleX(1.02); }
+  75% { transform: skewY(1.5deg) scaleX(0.99); }
+}
+
+.bg-flag {
+  position: absolute;
+  top: 0;
+  width: 90px;
+  height: auto;
+  opacity: 0.18;
+}
+
+.bg-flag-left {
+  left: 2%;
+}
+
+.bg-flag-right {
+  right: 2%;
+}
+
+.trump-theme .title-line1,
+.trump-theme .title-line2 {
+  color: var(--trump-gold-light);
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.6), 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.trump-theme .control-card {
+  border-top: 4px solid var(--trump-gold);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1), 0 0 0 1px rgba(212, 175, 55, 0.2);
+}
+
+.trump-theme .check-button {
+  background: linear-gradient(135deg, var(--trump-gold-light), var(--trump-gold));
+  color: #1a1a1a;
+  border: 2px solid var(--trump-navy);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.5), 0 0 25px rgba(255, 215, 0, 0.3);
+}
+
+.trump-theme .check-button:hover:not(:disabled) {
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.6), 0 0 35px rgba(255, 215, 0, 0.5);
+}
+
+.trump-theme .golf-course {
+  background: linear-gradient(180deg, #C9A227 0%, #6E5A17 60%, #3f3410 100%);
+}
+
+.trump-theme .container {
+  animation: goldGlow 3s ease-in-out infinite;
+}
+
+@keyframes goldGlow {
+  0%, 100% { filter: drop-shadow(0 0 0px rgba(255, 215, 0, 0)); }
+  50% { filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.25)); }
+}
+
+.trump-theme .golf-ball {
+  background: radial-gradient(circle, var(--trump-navy) 0% 38%, white 38% 68%, var(--trump-red) 68% 100%);
+  border: 2px solid var(--trump-gold);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+}
+
+.trump-theme .golf-ball::before {
+  content: '★';
+  width: auto;
+  height: auto;
+  top: 50%;
+  left: 50%;
+  background: none;
+  border-radius: 0;
+  transform: translate(-50%, -50%);
+  color: var(--trump-gold-light);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.trump-theme .golf-ball::after {
+  display: none;
+}
+
+.trump-theme .score-card,
+.trump-theme .overall-score-container,
+.trump-theme .timeline-container,
+.trump-theme .weather-summary {
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1), 0 0 15px rgba(255, 215, 0, 0.15);
+}
+
+.trump-theme .recommendation-box {
+  background: linear-gradient(135deg, #FFF9E6, #FFE8B0);
+  border: 1px solid var(--trump-gold);
+}
+
+/* Bunting */
+.trump-bunting {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 1rem;
+  animation: sway 4s ease-in-out infinite;
+}
+
+.trump-bunting span {
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 18px solid #BF0A30;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+
+/* Scrolling ticker */
+.trump-ticker {
+  background: linear-gradient(135deg, var(--trump-navy), #001a4d);
+  border-top: 2px solid var(--trump-gold);
+  border-bottom: 2px solid var(--trump-gold);
+  overflow: hidden;
+  white-space: nowrap;
+  margin-bottom: 2rem;
+  padding: 0.6rem 0;
+}
+
+.trump-ticker-track {
+  display: inline-flex;
+  animation: tickerScroll 22s linear infinite;
+}
+
+.trump-ticker-item {
+  color: var(--trump-gold-light);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  padding: 0 2rem;
+  border-right: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Confetti */
+.confetti-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 14px;
+  opacity: 0.9;
+  animation: confettiFall linear infinite;
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+  100% { transform: translateY(420px) rotate(360deg); opacity: 0; }
+}
+
+.results-container {
+  position: relative;
+}
+
+/* Soaring eagle */
+.eagle-animation {
+  position: fixed;
+  top: 8%;
+  left: -60px;
+  font-size: 2.5rem;
+  z-index: 10;
+  animation: eagleSoar 18s linear infinite;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+@keyframes eagleSoar {
+  0% { transform: translateX(0) translateY(0) scaleX(-1); }
+  50% { transform: translateX(calc(50vw + 60px)) translateY(-40px) scaleX(-1); }
+  100% { transform: translateX(calc(100vw + 120px)) translateY(0) scaleX(-1); }
+}
+
+/* Fireworks — 90+ scores */
+.fireworks-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.firework-spark {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: fireworkBurst 1.8s ease-out infinite;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes fireworkBurst {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  15% { opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.2); opacity: 0; }
+}
+
+/* Storm — poor scores */
+.storm-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.storm-drop {
+  position: absolute;
+  top: -20px;
+  width: 2px;
+  height: 18px;
+  background: linear-gradient(180deg, rgba(150,160,180,0.8), rgba(80,90,110,0.2));
+  animation: stormFall linear infinite;
+}
+
+@keyframes stormFall {
+  0% { transform: translateY(0); opacity: 0.8; }
+  100% { transform: translateY(420px); opacity: 0.2; }
+}
+
+.storm-flash {
+  position: absolute;
+  inset: 0;
+  background: rgba(191, 10, 48, 0.15);
+  animation: stormFlash 4s ease-in-out infinite;
+  mix-blend-mode: multiply;
+}
+
+@keyframes stormFlash {
+  0%, 90%, 100% { opacity: 0; }
+  92%, 94% { opacity: 1; }
+}
+
+/* One-time shake for disaster-tier results */
+.disaster-shake {
+  animation: slideUp 0.5s ease, resultsShake 0.5s ease-in-out 0.5s;
+}
+
+@keyframes resultsShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* Gold/silver/red presidential seal stamp */
+.overall-score-wrapper {
+  position: relative;
+}
+
+.trump-seal {
+  position: absolute;
+  top: -14px;
+  right: 4%;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 4px double;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transform: rotate(-16deg);
+  animation: sealStamp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 8;
+}
+
+.trump-seal-text {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1.15;
+  padding: 0 10px;
+}
+
+@keyframes sealStamp {
+  0% { transform: rotate(-16deg) scale(3); opacity: 0; }
+  60% { transform: rotate(-16deg) scale(0.9); opacity: 1; }
+  100% { transform: rotate(-16deg) scale(1); opacity: 1; }
+}
+
+.trump-seal-tremendous {
+  background: radial-gradient(circle, #FFF6C8 0%, var(--trump-gold-light) 55%, var(--trump-gold) 100%);
+  border-color: #8a6d10;
+  color: #4a3a08;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.6);
+}
+
+.trump-seal-good {
+  background: radial-gradient(circle, #FFFDF5 0%, var(--trump-gold) 70%, #a9812a 100%);
+  border-color: #8a6d10;
+  color: #4a3a08;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.5);
+}
+
+.trump-seal-meh {
+  background: radial-gradient(circle, #f2f2f2 0%, #b7b7b7 70%, #8a8a8a 100%);
+  border-color: #6b6b6b;
+  color: #333;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.trump-seal-disaster {
+  background: radial-gradient(circle, #ffffff 0%, #ffdcdc 60%, #ffffff 100%);
+  border-color: var(--trump-red);
+  color: var(--trump-red);
+  box-shadow: 0 4px 10px rgba(191, 10, 48, 0.4);
+}
+
+.usa-chant-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(90deg, var(--trump-red), var(--trump-navy));
+  color: white;
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 1.3rem;
+  border-radius: 8px;
+  border: 2px solid var(--trump-gold);
+  animation: chantPulse 0.6s ease-in-out infinite;
+  position: relative;
+  z-index: 7;
+}
+
+.chant-flag {
+  width: 32px;
+  height: auto;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+@keyframes chantPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.fake-score-banner {
+  position: absolute;
+  top: 42%;
+  left: -12%;
+  width: 124%;
+  transform: rotate(-8deg);
+  background: var(--trump-red);
+  color: white;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 0.5rem 0;
+  font-size: 1.05rem;
+  border-top: 2px solid rgba(255,255,255,0.6);
+  border-bottom: 2px solid rgba(255,255,255,0.6);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  z-index: 9;
+  animation: fakeBannerDrop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes fakeBannerDrop {
+  0% { transform: rotate(-8deg) translateY(-60px); opacity: 0; }
+  100% { transform: rotate(-8deg) translateY(0); opacity: 1; }
 }

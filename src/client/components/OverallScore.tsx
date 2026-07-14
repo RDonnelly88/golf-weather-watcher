@@ -145,7 +145,6 @@ function OverallScore({ score, scores, recommendation }: OverallScoreProps) {
       )}
 
       <div className="recommendation-box">
-        <div className="recommendation-emoji">{recommendation.emoji}</div>
         <div className="recommendation-text">{recommendation.text}</div>
       </div>
     </div>

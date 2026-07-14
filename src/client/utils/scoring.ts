@@ -299,32 +299,24 @@ export function calculateGolfScore(
 
   // Generate recommendation
   let recommendation: string;
-  let emoji: string;
+  const emoji = "";
 
   if (lightnessModifier === 0) {
     recommendation = "Playing in the dark? Might as well go to the pub!";
-    emoji = "🌚🍺";
   } else if (lightnessModifier <= 0.2) {
     recommendation = "Finishing in darkness - this will be grim!";
-    emoji = "🌚⛳";
   } else if (overallScore >= 90) {
     recommendation = "PERFECT CONDITIONS! We're going to have a ball";
-    emoji = "⛳🌟";
   } else if (overallScore >= 75) {
     recommendation = "For the time of year, we'll take it.";
-    emoji = "⛳😄";
   } else if (overallScore >= 60) {
     recommendation = "Decent - we've done worse";
-    emoji = "⛳😊";
   } else if (overallScore >= 45) {
     recommendation = "Yuk but we'll survive!";
-    emoji = "⛳🌧️";
   } else if (overallScore >= 30) {
     recommendation = "This will be grim - are we sure it's a good idea?";
-    emoji = "⛳💨";
   } else {
     recommendation = "Can we get our money back and just go on the piss instead?";
-    emoji = "🍺🌧️";
   }
 
   return {
