@@ -173,8 +173,16 @@ export async function saveCourses(page: Page, courses: { name: string; latitude:
   }, courses);
 }
 
-/** Serves a failure, for the state where there is no answer to give. */
+/**
+ * Serves a round that cannot be scored, over a fortnight that can.
+ *
+ * The date being out of range is a failure of the round and not of the
+ * service, so the outlook below it still answers — and it has to be served
+ * here too, or the page races a request nothing is standing in for and comes
+ * out a different height each run.
+ */
 export async function serveFailure(page: Page, message: string) {
+  await serveWeather(page);
   await page.route("**/api/forecast**", (route) =>
     route.fulfill({ status: 502, json: { error: message } })
   );
