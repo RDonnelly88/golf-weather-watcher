@@ -87,6 +87,13 @@ export async function serveWeather(page: Page, forecast: RoundForecast = FINE) {
   await page.route("**/api/places**", (route) => route.fulfill({ json: PLACES }));
 }
 
+/** Seeds the courses this browser has kept, as if they had been starred. */
+export async function saveCourses(page: Page, courses: { name: string; latitude: number; longitude: number }[]) {
+  await page.addInitScript((saved) => {
+    localStorage.setItem("golf-weather-watcher-favourites", JSON.stringify(saved));
+  }, courses);
+}
+
 /** Serves a failure, for the state where there is no answer to give. */
 export async function serveFailure(page: Page, message: string) {
   await page.route("**/api/forecast**", (route) =>

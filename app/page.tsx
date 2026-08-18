@@ -6,6 +6,7 @@ import { TriangleAlert } from "lucide-react";
 import { summariseRound } from "@/lib/forecast";
 import { scoreRound } from "@/lib/scoring";
 import { startHourOf, useForecast } from "@/hooks/useForecast";
+import { useFavouriteCourses } from "@/hooks/useFavouriteCourses";
 import { useRoundSettings } from "@/hooks/useRoundSettings";
 import RoundForm from "@/components/round/RoundForm";
 import RoundHeading from "@/components/RoundHeading";
@@ -26,6 +27,7 @@ import { Card, CardContent } from "@/components/ui/card";
  */
 export default function Page() {
   const { settings, ready, update } = useRoundSettings();
+  const favourites = useFavouriteCourses();
   const { data: forecast, isPending, error } = useForecast(settings, ready);
 
   const round = useMemo(
@@ -54,7 +56,7 @@ export default function Page() {
         <ThemeToggle />
       </header>
 
-      <RoundForm settings={settings} onChange={update} />
+      <RoundForm settings={settings} favourites={favourites} onChange={update} />
 
       <section className="mt-6 space-y-6" aria-live="polite">
         {error && (

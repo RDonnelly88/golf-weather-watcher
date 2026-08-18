@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { test, type Page } from "@playwright/test";
 
-import { FINE, FOUL, RECORDED, serveFailure, serveWeather } from "./fixtures";
+import { FINE, FOUL, RECORDED, saveCourses, serveFailure, serveWeather } from "./fixtures";
 
 /**
  * The visual record. Not assertions — a folder of screenshots to look at.
@@ -71,8 +71,21 @@ for (const theme of ["light", "dark"] as const) {
     await serveWeather(page, FINE);
     await page.goto("/");
     await settled(page);
-    await page.getByLabel("Course").click();
+    await page.getByLabel("Course", { exact: true }).click();
     await shot(page, info.project.name, `04-courses-${theme}`);
+  });
+
+  test(`saved courses — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await saveCourses(page, [
+      { name: "Machrihanish Dunes", latitude: 55.4325, longitude: -5.7167 },
+      { name: "Prestwick, Scotland", latitude: 55.4956, longitude: -4.6136 },
+    ]);
+    await page.goto("/");
+    await settled(page);
+    await page.getByLabel("Course", { exact: true }).click();
+    await shot(page, info.project.name, `04b-saved-${theme}`);
   });
 
   test(`the date picker — ${theme}`, async ({ page }, info) => {
