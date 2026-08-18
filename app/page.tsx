@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { TriangleAlert } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 
 import { summariseRound } from "@/lib/forecast";
 import { scoreRound } from "@/lib/scoring";
@@ -27,7 +28,31 @@ import { Card, CardContent } from "@/components/ui/card";
  * rather than held in state beside it — two copies of the same answer is how
  * they come to disagree.
  */
+/**
+ * The scores arriving.
+ *
+ * One after another rather than all at once, quickly enough that it reads as
+ * the answer landing rather than as a sequence being played at you. The
+ * container carries the timing so the cards need know nothing about their own
+ * place in the order.
+ */
+const ARRIVING = {
+  hidden: {},
+  shown: { transition: { staggerChildren: 0.06, delayChildren: 0.04 } },
+};
+
+const CARD = {
+  hidden: { opacity: 0, y: 12 },
+  shown: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+};
+
 export default function Page() {
+  // Motion leaves opacity alone when the reader asks for less of it, which is
+  // the right default and the wrong one here: a sequence of things fading in
+  // one after another is the thing being objected to, not the fading. Asked
+  // for less, the answer is simply there.
+  const still = useReducedMotion();
+
   const { settings, ready, update } = useRoundSettings();
   const favourites = useFavouriteCourses();
   const { data: forecast, isPending, error } = useForecast(settings, ready);
@@ -92,25 +117,42 @@ export default function Page() {
         )}
 
         {forecast && round && (
-          <div className="animate-slide-up space-y-6">
-            <RoundHeading settings={settings} forecast={forecast} />
+          <motion.div
+            // Not keyed on the round: a question the app has not answered
+            // before empties this while it waits, so the block mounts fresh
+            // and the entrance runs on its own. Forcing it would also replay
+            // the whole stagger for an answer that was already known.
+            variants={ARRIVING}
+            initial={still ? false : "hidden"}
+            animate="shown"
+            className="space-y-6"
+          >
+            <motion.div variants={CARD}>
+              <RoundHeading settings={settings} forecast={forecast} />
+            </motion.div>
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <OverallScore round={round} />
+              <motion.div variants={CARD}>
+                <OverallScore round={round} />
+              </motion.div>
 
               <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
                 {round.factors.map((factor) => (
-                  <FactorCard
+                  <motion.div
                     key={factor.key}
-                    factor={factor}
+                    variants={CARD}
                     className={factor.key === "daylight" ? "sm:col-span-2" : undefined}
-                  />
+                  >
+                    <FactorCard factor={factor} />
+                  </motion.div>
                 ))}
               </div>
             </div>
 
-            <RoundTimeline forecast={forecast} />
-          </div>
+            <motion.div variants={CARD}>
+              <RoundTimeline forecast={forecast} />
+            </motion.div>
+          </motion.div>
         )}
 
         {outlook.isPending && !outlook.error && <div className="sheen h-80 rounded-lg" />}

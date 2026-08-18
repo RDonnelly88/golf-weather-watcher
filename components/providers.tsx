@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MotionConfig } from "motion/react";
 
 import { CACHE_SECONDS } from "@/lib/config";
 
@@ -29,5 +30,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
       })
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      {/*
+       * Every animation in the app answers to the operating system's setting
+       * through this, rather than each component asking separately and one of
+       * them forgetting. Transforms and fades are dropped and the final state
+       * applied at once; anything that only exists while it moves would then
+       * photograph as nothing, which is why nothing does.
+       */}
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
+    </QueryClientProvider>
+  );
 }
