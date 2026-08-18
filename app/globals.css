@@ -51,14 +51,19 @@
 
   /* The heatmap's five steps. Hue does the work and lightness is held level,
      so the ramp reads as one scale rather than as five unrelated colours — and
-     because every step sits at the same lightness, one text colour clears
-     contrast on all of them. */
-  --score-1: 4 62% 38%;
-  --score-2: 24 68% 36%;
-  --score-3: 44 78% 31%;
-  --score-4: 96 55% 29%;
-  --score-5: 145 62% 28%;
-  --score-foreground: 0 0% 100%;
+     because every step sits at the same lightness, one ink colour clears
+     contrast on all of them.
+
+     Deliberately washed out. Two hundred and thirty-eight of these sit in one
+     grid, and at full strength that many saturated blocks fight both the cards
+     around them and each other, which is the opposite of what a heatmap is
+     for: the eye should find the pattern, not survive the colours. */
+  --score-1: 6 62% 84%;
+  --score-2: 26 68% 82%;
+  --score-3: 44 62% 80%;
+  --score-4: 92 40% 79%;
+  --score-5: 145 42% 76%;
+  --score-foreground: 158 30% 22%;
 
   /* For text sitting ON those colours, not beside them. Good, fair and poor
      are chosen to read as text against a surface, so in light mode they are
@@ -108,12 +113,12 @@
     --poor: 4 82% 68%;
 
     /* Pale blocks in the dark theme, so the ink on them inverts with them. */
-    --score-1: 4 78% 66%;
-    --score-2: 24 82% 62%;
-    --score-3: 44 88% 58%;
-    --score-4: 96 58% 56%;
-    --score-5: 145 60% 58%;
-    --score-foreground: 158 30% 5%;
+    --score-1: 6 42% 34%;
+    --score-2: 26 48% 32%;
+    --score-3: 44 46% 30%;
+    --score-4: 92 30% 29%;
+    --score-5: 145 34% 28%;
+    --score-foreground: 140 22% 88%;
 
     /* Inverted: the dark theme's score colours are pale blocks. */
     --good-foreground: 158 30% 5%;
@@ -160,12 +165,12 @@
   --poor: 4 82% 68%;
 
   /* Pale blocks in the dark theme, so the ink on them inverts with them. */
-  --score-1: 4 78% 66%;
-  --score-2: 24 82% 62%;
-  --score-3: 44 88% 58%;
-  --score-4: 96 58% 56%;
-  --score-5: 145 60% 58%;
-  --score-foreground: 158 30% 5%;
+  --score-1: 6 42% 34%;
+  --score-2: 26 48% 32%;
+  --score-3: 44 46% 30%;
+  --score-4: 92 30% 29%;
+  --score-5: 145 34% 28%;
+  --score-foreground: 140 22% 88%;
 
   /* Inverted: the dark theme's score colours are pale blocks. */
   --good-foreground: 158 30% 5%;

@@ -132,22 +132,22 @@ for (const theme of ["light", "dark"] as const) {
     await shot(page, info.project.name, `06-recorded-${theme}`);
   });
 
-  test(`the week ahead — ${theme}`, async ({ page }, info) => {
+  test(`the fortnight ahead — ${theme}`, async ({ page }, info) => {
     await setTheme(page, theme);
     await serveWeather(page, FINE);
     await page.goto("/");
     await settled(page);
-    await page.getByRole("heading", { name: "The week ahead" }).scrollIntoViewIfNeeded();
+    await page.getByRole("heading", { name: "The fortnight ahead" }).scrollIntoViewIfNeeded();
     await shot(page, info.project.name, `08-outlook-${theme}`);
   });
 
-  test(`an hour in the week, picked out — ${theme}`, async ({ page }, info) => {
+  test(`an hour in the fortnight, picked out — ${theme}`, async ({ page }, info) => {
     await setTheme(page, theme);
     await serveWeather(page, FINE);
     await page.goto("/");
     await settled(page);
-    const week = page.getByRole("region", { name: "The week ahead" });
-    await page.getByRole("heading", { name: "The week ahead" }).scrollIntoViewIfNeeded();
+    const week = page.getByRole("region", { name: "The fortnight ahead" });
+    await page.getByRole("heading", { name: "The fortnight ahead" }).scrollIntoViewIfNeeded();
     await week.getByRole("button", { name: /14:00 on Tuesday 29 September/ }).click();
     await shot(page, info.project.name, `09-outlook-open-${theme}`);
   });

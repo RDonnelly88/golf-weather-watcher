@@ -8,7 +8,7 @@ import {
   type HourlyReading,
   type RoundForecast,
   type RoundRequest,
-  type WeekForecast,
+  type OutlookForecast,
 } from "@/lib/forecast";
 
 /**
@@ -241,11 +241,11 @@ export async function fetchRound(
  * Always the forecast model: the week ahead is the only week it is asked
  * about.
  */
-export async function fetchWeek(
+export async function fetchOutlook(
   request: { latitude: number; longitude: number; days: number },
   signal?: AbortSignal,
   today = new Date()
-): Promise<WeekForecast> {
+): Promise<OutlookForecast> {
   const start = format(today, "yyyy-MM-dd");
   const data = await fetchHourly(
     {

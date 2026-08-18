@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 
-import type { HourlyReading, RoundForecast, WeekForecast } from "@/lib/forecast";
+import { OUTLOOK } from "@/lib/config";
+import type { HourlyReading, RoundForecast, OutlookForecast } from "@/lib/forecast";
 import type { Place } from "@/lib/places";
 
 /**
@@ -98,19 +99,20 @@ export async function serveWeather(page: Page, forecast: RoundForecast = FINE) {
   await page.route("**/api/forecast**", (route) =>
     route.fulfill({ json: forecast })
   );
-  await page.route("**/api/outlook**", (route) => route.fulfill({ json: WEEK }));
+  await page.route("**/api/outlook**", (route) => route.fulfill({ json: FORTNIGHT }));
   await page.route("**/api/places**", (route) => route.fulfill({ json: PLACES }));
 }
 
 /**
- * A week at one course, turning from a fine start to a foul middle and back.
+ * A fortnight at one course, turning from a fine start to a foul middle and
+ * back, and settling again.
  *
- * Generated rather than written out: seven days of hourly weather is a
- * hundred and sixty-eight readings, and the point of it is the shape of the
- * week rather than any one hour in it.
+ * Generated rather than written out: two weeks of hourly weather is several
+ * hundred readings, and the point of it is the shape of the fortnight rather
+ * than any one hour in it.
  */
-function week(): WeekForecast {
-  const days = Array.from({ length: 7 }, (_, offset) => {
+function fortnight(): OutlookForecast {
+  const days = Array.from({ length: OUTLOOK.days }, (_, offset) => {
     const date = new Date(`${TODAY}T00:00:00Z`);
     date.setUTCDate(date.getUTCDate() + offset);
     return date.toISOString().slice(0, 10);
@@ -126,6 +128,13 @@ function week(): WeekForecast {
     { temperature: 11, wind: 14, rain: 0.3, chance: 55, cloud: 75, code: 51 },
     { temperature: 15, wind: 8, rain: 0, chance: 20, cloud: 40, code: 2 },
     { temperature: 19, wind: 5, rain: 0, chance: 5, cloud: 10, code: 0 },
+    { temperature: 20, wind: 4, rain: 0, chance: 5, cloud: 15, code: 0 },
+    { temperature: 16, wind: 11, rain: 0, chance: 35, cloud: 60, code: 2 },
+    { temperature: 12, wind: 19, rain: 1.4, chance: 80, cloud: 95, code: 63 },
+    { temperature: 9, wind: 27, rain: 3.2, chance: 98, cloud: 100, code: 95 },
+    { temperature: 12, wind: 13, rain: 0.2, chance: 45, cloud: 70, code: 51 },
+    { temperature: 16, wind: 7, rain: 0, chance: 15, cloud: 35, code: 1 },
+    { temperature: 18, wind: 6, rain: 0, chance: 10, cloud: 25, code: 1 },
   ];
 
   return {
@@ -155,7 +164,7 @@ function week(): WeekForecast {
   };
 }
 
-export const WEEK: WeekForecast = week();
+export const FORTNIGHT: OutlookForecast = fortnight();
 
 /** Seeds the courses this browser has kept, as if they had been starred. */
 export async function saveCourses(page: Page, courses: { name: string; latitude: number; longitude: number }[]) {

@@ -1,5 +1,5 @@
-import { OUTLOOK_HOURS } from "@/lib/config";
-import { hourStamp, minutesOfDay, type HourlyReading, type WeekForecast } from "@/lib/forecast";
+import { OUTLOOK, OUTLOOK_HOURS } from "@/lib/config";
+import { hourStamp, minutesOfDay, type HourlyReading, type OutlookForecast } from "@/lib/forecast";
 import { scoreRound, type RoundScore } from "@/lib/scoring";
 import { describeSky, type Sky } from "@/lib/weather-codes";
 
@@ -45,7 +45,7 @@ export function courseTime(utcOffsetSeconds: number, now: Date): string {
   return shifted.toISOString().slice(0, 16);
 }
 
-export function scoreOutlook(forecast: WeekForecast, now: Date): OutlookDay[] {
+export function scoreOutlook(forecast: OutlookForecast, now: Date): OutlookDay[] {
   const byTime = new Map(forecast.hours.map((hour) => [hour.time, hour]));
   const here = courseTime(forecast.utcOffsetSeconds, now);
 
@@ -111,4 +111,30 @@ export function bestHour(days: OutlookDay[]): HourCell | null {
   }
 
   return best === null ? null : best.cell;
+}
+
+/** The round the form is set to, so the grid can show where it falls. */
+export interface ChosenRound {
+  date: string;
+  startHour: number;
+  length: number;
+}
+
+/**
+ * The hours of a day the chosen round covers, clipped to the hours drawn.
+ *
+ * Null when the round is on another day or falls entirely outside them. A
+ * round that runs past the last hour is clipped rather than dropped: the part
+ * of it on the grid is still the part being asked about.
+ */
+export function chosenWindow(
+  round: ChosenRound,
+  date: string
+): { firstHour: number; lastHour: number } | null {
+  if (round.date !== date) return null;
+
+  const firstHour = Math.max(round.startHour, OUTLOOK.firstHour);
+  const lastHour = Math.min(round.startHour + round.length - 1, OUTLOOK.lastHour);
+
+  return lastHour < firstHour ? null : { firstHour, lastHour };
 }

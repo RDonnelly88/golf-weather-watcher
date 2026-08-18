@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { CACHE_SECONDS, OUTLOOK } from "@/lib/config";
-import { ForecastError, fetchWeek } from "@/lib/open-meteo";
+import { ForecastError, fetchOutlook } from "@/lib/open-meteo";
 
 /**
  * A week of weather at one course, whole.
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const week = await fetchWeek(
+    const week = await fetchOutlook(
       { ...parsed.data, days: OUTLOOK.days },
       request.signal
     );

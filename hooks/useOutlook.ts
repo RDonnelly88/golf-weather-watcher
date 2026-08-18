@@ -2,8 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchWeek } from "@/lib/api";
-import type { WeekForecast } from "@/lib/forecast";
+import { fetchOutlook } from "@/lib/api";
+import type { OutlookForecast } from "@/lib/forecast";
 import type { Course } from "@/lib/config";
 
 /**
@@ -14,9 +14,9 @@ import type { Course } from "@/lib/config";
  * already here rather than asking again.
  */
 export function useOutlook(course: Course, ready: boolean) {
-  return useQuery<WeekForecast>({
+  return useQuery<OutlookForecast>({
     queryKey: ["outlook", course.latitude, course.longitude],
-    queryFn: ({ signal }) => fetchWeek(course, signal),
+    queryFn: ({ signal }) => fetchOutlook(course, signal),
     enabled: ready,
   });
 }

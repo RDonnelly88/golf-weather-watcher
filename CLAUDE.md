@@ -57,8 +57,8 @@ not.
 
 **Whether an hour has been and gone is a question about the clock at the
 course.** A morning in Auckland is not over because it is evening in Fife. The
-week carries the course's UTC offset for exactly this, and `courseTime()` is
-the only thing that should answer it.
+outlook carries the course's UTC offset for exactly this, and `courseTime()`
+is the only thing that should answer it.
 
 **Colour is never the only carrier of a score.** The heatmap paints an hour and
 says nothing in the cell, so the accessible name spells the number out. Any new
@@ -93,8 +93,8 @@ works while animating will photograph as nothing.
 |---|---|
 | `lib/config.ts` | Every tunable value. Bands and weights are NOT here — the model owns them |
 | `lib/scoring.ts` | The scoring model, pure and tested |
-| `lib/forecast.ts` | The shape of a round and of a week, and the pure work of summarising one |
-| `lib/outlook.ts` | The week cut into hours and scored, pure and tested |
+| `lib/forecast.ts` | The shape of a round and of an outlook, and the pure work of summarising one |
+| `lib/outlook.ts` | The fortnight cut into hours and scored, pure and tested |
 | `lib/open-meteo.ts` | The weather, from whichever of the two models holds the day |
 | `lib/places.ts` | Course search |
 | `lib/comfort.ts` | The readings that don't score but change what you pack |
