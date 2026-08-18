@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { format, isToday, parseISO } from "date-fns";
+import { motion } from "motion/react";
 
 import { OUTLOOK, OUTLOOK_HOURS, type Course } from "@/lib/config";
 import type { OutlookForecast } from "@/lib/forecast";
@@ -62,6 +63,27 @@ export default function OutlookGrid({
   // Pinning wins over hovering. Tapping an hour is a deliberate act meaning
   // hold this one, and it has to survive the pointer drifting across the grid
   // — or the page scrolling under a pointer that never moved.
+  /**
+   * Where the chosen round sits, as one placement in the whole grid.
+   *
+   * Lifted out of the days rather than rendered inside the one it belongs to:
+   * an element that moves between parents is unmounted and mounted again, and
+   * a thing that is mounted again cannot be animated from where it was.
+   */
+  const outline = useMemo(() => {
+    for (const [index, day] of days.entries()) {
+      const window = chosenWindow(round, day.date);
+      if (window) {
+        return {
+          row: index + 2,
+          column: columnOf(window.firstHour),
+          span: window.lastHour - window.firstHour + 1,
+        };
+      }
+    }
+    return null;
+  }, [days, round]);
+
   const activeTime = pinned ?? hovered ?? best?.time ?? null;
   const active = useMemo(
     () =>
@@ -161,25 +183,26 @@ export default function OutlookGrid({
                         }
                       />
                     ))}
-
-                    {chosen && (
-                      /* Laid over the hours it covers, half a gap proud of them
-                         on each side, so it reads as one window rather than as
-                         four cells that happen to be outlined. */
-                      <span
-                        aria-hidden
-                        className="pointer-events-none z-20 -m-0.5 rounded-md border-2 border-accent"
-                        style={{
-                          gridColumn: `${columnOf(chosen.firstHour)} / span ${
-                            chosen.lastHour - chosen.firstHour + 1
-                          }`,
-                          gridRow: row,
-                        }}
-                      />
-                    )}
                   </div>
                 );
               })}
+
+              {outline && (
+                /* Laid over the hours it covers, half a gap proud of them on
+                   each side, so it reads as one window rather than as four
+                   cells that happen to be outlined. `layout` is what makes it
+                   travel to a new tee time instead of appearing at one. */
+                <motion.span
+                  aria-hidden
+                  layout
+                  transition={{ type: "spring", stiffness: 90, damping: 18 }}
+                  className="pointer-events-none z-20 -m-0.5 rounded-md border-2 border-accent"
+                  style={{
+                    gridColumn: `${outline.column} / span ${outline.span}`,
+                    gridRow: outline.row,
+                  }}
+                />
+              )}
             </div>
           </div>
 

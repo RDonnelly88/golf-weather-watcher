@@ -84,8 +84,22 @@ drawn in one of the three, and the raw Tailwind colours fail contrast on a
 white card.
 
 **Motion is `motion/react`**, and every animation must survive
-`prefers-reduced-motion`. The screenshot run forces it, so anything that only
-works while animating will photograph as nothing.
+`prefers-reduced-motion`. The `MotionConfig` in `components/providers.tsx`
+drops transforms and layout animations, and the block at the end of
+`globals.css` neutralises anything animated in CSS — but a fade is neither.
+Motion keeps opacity on purpose, so a component whose entrance should be
+skipped rather than merely shortened has to ask `useReducedMotion()` and pass
+`initial={false}`. Three of them do.
+
+The screenshot run forces reduced motion. Anything that only exists while it
+moves photographs as nothing, and anything that fades in photographs half
+arrived — which is how a page of cards came to be recorded at a third of
+their opacity.
+
+**An outgoing panel is still in the document.** Anything that animates on its
+way out stays clickable while it leaves, and a stale button acts on stale
+data. Either keep the control outside what animates, or don't animate the
+exit.
 
 ## Where things live
 

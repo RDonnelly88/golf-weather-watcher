@@ -46,13 +46,20 @@ export default function HeatCell({
 }) {
   const clock = `${String(cell.hour).padStart(2, "0")}:00`;
   const when = `${clock} on ${format(parseISO(cell.time.slice(0, 10)), "EEEE d MMMM")}`;
-  const at = { gridColumn: column, gridRow: row };
+  // Down and across at once, so the fortnight sweeps in on a diagonal rather
+  // than a row at a time. Twelve milliseconds a step puts the last cell of the
+  // last day a third of a second behind the first.
+  const at = {
+    gridColumn: column,
+    gridRow: row,
+    animationDelay: `${(column + row - 4) * 12}ms`,
+  };
 
   if (cell.score === null || cell.reading === null) {
     return (
       <div
         style={at}
-        className="h-9 rounded border border-dashed border-border"
+        className="cell-in h-9 rounded border border-dashed border-border"
         title={`No forecast for ${when}`}
       />
     );
@@ -62,7 +69,7 @@ export default function HeatCell({
     return (
       <div
         style={at}
-        className="flex h-9 items-center justify-center rounded border border-border bg-surface-2/60"
+        className="cell-in flex h-9 items-center justify-center rounded border border-border bg-surface-2/60"
         title={`Dark at ${when}`}
       >
         <Moon className="h-3 w-3 text-muted-foreground/60" aria-hidden />
@@ -80,7 +87,7 @@ export default function HeatCell({
       onClick={onPin}
       aria-pressed={selected}
       className={cn(
-        "focus-ring flex h-9 items-center justify-center rounded transition-[filter,outline] text-score-foreground",
+        "cell-in focus-ring flex h-9 items-center justify-center rounded transition-[filter,outline] text-score-foreground",
         heatFill(cell.score.overall),
         // Already been and gone: still worth seeing the shape of, not worth
         // considering.

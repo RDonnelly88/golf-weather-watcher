@@ -48,19 +48,15 @@ const SHARE: Record<FactorKey, string> = {
  * against, with the one the reading fell into marked. The alternative is a
  * number with nothing behind it, and this app's entire opinion is arithmetic.
  */
-export default function FactorCard({
-  factor,
-  className,
-}: {
-  factor: FactorScore;
-  className?: string;
-}) {
+export default function FactorCard({ factor }: { factor: FactorScore }) {
   const [open, setOpen] = useState(false);
   const Icon = ICONS[factor.key];
   const tone = TONE[toneFor(factor.score)];
 
   return (
-    <Card className={className}>
+    // Fills the wrapper, which is what is stretched to the row: without it
+    // two cards side by side stop agreeing about how tall they are.
+    <Card className="h-full">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

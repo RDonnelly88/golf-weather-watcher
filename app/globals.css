@@ -342,10 +342,30 @@ html[data-theme="dark"] {
   }
 }
 
+/* An hour of the heatmap arriving. Each cell carries its own delay, so the
+   fortnight fills in on a diagonal rather than all at once. `backwards` holds
+   the start state through that delay, and leaves the cell's own styling alone
+   once it has landed — which is what keeps an hour that has been and gone
+   faded afterwards. */
+@keyframes cell-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes sheen {
   to {
     transform: translateX(100%);
   }
+}
+
+@utility cell-in {
+  animation: cell-in 0.32s ease-out backwards;
 }
 
 /* Loading placeholder. The sweep has a direction, which reads as content still
@@ -375,6 +395,10 @@ html[data-theme="dark"] {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* The delay matters as much as the duration: a staggered entrance holds
+       its start state through the wait, so without this the last thing in a
+       grid stays invisible for a third of a second after the first. */
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;

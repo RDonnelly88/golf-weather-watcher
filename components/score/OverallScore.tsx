@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 
 import { WEIGHTS, toneFor, type FactorScore, type RoundScore } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
@@ -27,13 +28,16 @@ function isWeighted(factor: FactorScore): factor is WeightedFactor {
 
 export default function OverallScore({ round }: { round: RoundScore }) {
   const [open, setOpen] = useState(false);
+  // A dash offset is not a transform, so motion would animate it whatever the
+  // reader has asked for. This is the ring's share of honouring that.
+  const still = useReducedMotion();
   const tone = TONE[toneFor(round.overall)];
 
   const daylight = round.factors.find((factor) => factor.key === "daylight");
   const weighted = round.factors.filter(isWeighted);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardContent className="flex h-full flex-col items-center justify-center p-6">
         <div className="relative">
           {/* Decorative: the figure and its scale are written in the middle. */}
@@ -46,7 +50,12 @@ export default function OverallScore({ round }: { round: RoundScore }) {
               strokeWidth="10"
               className="stroke-surface-2"
             />
-            <circle
+            {/* Sweeps round from empty on the first draw and travels between
+                scores after that, on the same clock as the figure counting up
+                in the middle of it. A spring rather than a curve because it
+                arrives at the number and settles, which is what the number
+                itself does. */}
+            <motion.circle
               cx="100"
               cy="100"
               r={RADIUS}
@@ -54,11 +63,10 @@ export default function OverallScore({ round }: { round: RoundScore }) {
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
-              strokeDashoffset={CIRCUMFERENCE * (1 - round.overall / 100)}
-              className={cn(
-                "transition-[stroke-dashoffset] duration-700 ease-out",
-                tone.stroke
-              )}
+              initial={still ? false : { strokeDashoffset: CIRCUMFERENCE }}
+              animate={{ strokeDashoffset: CIRCUMFERENCE * (1 - round.overall / 100) }}
+              transition={{ type: "spring", stiffness: 60, damping: 18 }}
+              className={tone.stroke}
             />
           </svg>
 

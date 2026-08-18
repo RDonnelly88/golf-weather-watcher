@@ -9,6 +9,7 @@
 /* eslint-disable jsx-a11y/prefer-tag-over-role */
 
 import { format, parseISO } from "date-fns";
+import { motion, useReducedMotion } from "motion/react";
 
 import type { HourCell } from "@/lib/outlook";
 import { toneFor } from "@/lib/scoring";
@@ -49,6 +50,8 @@ export default function HourDetail({
     );
   }
 
+  // See the note in CLAUDE.md: MotionConfig drops transforms, not fades.
+  const still = useReducedMotion();
   const { reading, score } = cell;
   const date = cell.time.slice(0, 10);
   const clock = `${String(cell.hour).padStart(2, "0")}:00`;
@@ -60,61 +63,78 @@ export default function HourDetail({
       aria-label={LABEL}
       className="min-h-[9.5rem] rounded-lg border border-border bg-surface-2/40 p-3"
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 font-medium">
-            {cell.sky && <SkyIcon kind={cell.sky.kind} className="h-4 w-4" />}
-            <span className="tabular">{clock}</span>
-            <span className="truncate text-muted-foreground">
-              {format(parseISO(date), "EEEE d MMMM")}
-            </span>
-          </p>
-          <p className="tabular mt-1 text-sm text-muted-foreground">
-            {Math.round(reading.temperature)}°C, feels like{" "}
-            {Math.round(reading.feelsLike)}°C · {Math.round(reading.windSpeed)} mph{" "}
-            {compassPoint(reading.windDirection)}
-            {reading.windGust !== null && reading.windGust > reading.windSpeed + 2 &&
-              `, gusting ${Math.round(reading.windGust)}`}{" "}
-            · {Math.round(reading.cloudCover)}% cloud ·{" "}
-            {reading.rainfall > 0 ? `${reading.rainfall.toFixed(1)} mm` : "dry"}
-            {reading.rainChance !== null && ` (${Math.round(reading.rainChance)}%)`}
-          </p>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-3">
-          <p className={cn("tabular text-2xl font-bold leading-none", tone.text)}>
-            {score.overall}
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onChoose({ date, teeTime: clock })}
-          >
-            Take a proper look
-          </Button>
-        </div>
-      </div>
-
-      <dl className="mt-3 grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
-        {score.factors.map((factor) => (
-          <div key={factor.key} className="flex items-center gap-2">
-            <dt className="w-20 shrink-0 text-xs text-muted-foreground">
-              {factor.label}
-            </dt>
-            <dd className="flex min-w-0 flex-1 items-center gap-2">
-              <ScoreBar score={factor.score} className="h-1.5 flex-1" />
-              <span
-                className={cn(
-                  "tabular w-7 shrink-0 text-right text-xs font-medium",
-                  TONE[toneFor(factor.score)].text
-                )}
-              >
-                {factor.score}
+      {/*
+       * The contents arrive; the box does not move. Keyed on the hour so each
+       * one is its own thing landing, and quick, because the pointer can cross
+       * a fortnight of them in a second and anything slower reads as the page
+       * lagging behind the mouse rather than as movement.
+       *
+       * The hour going out is not animated on its way, and deliberately: an
+       * outgoing panel stays in the document while it leaves, and it carries a
+       * button that would still act on the hour you have just moved off.
+       */}
+      <motion.div
+        key={cell.time}
+        initial={still ? false : { opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.12, ease: "easeOut" }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 font-medium">
+              {cell.sky && <SkyIcon kind={cell.sky.kind} className="h-4 w-4" />}
+              <span className="tabular">{clock}</span>
+              <span className="truncate text-muted-foreground">
+                {format(parseISO(date), "EEEE d MMMM")}
               </span>
-            </dd>
+            </p>
+            <p className="tabular mt-1 text-sm text-muted-foreground">
+              {Math.round(reading.temperature)}°C, feels like{" "}
+              {Math.round(reading.feelsLike)}°C · {Math.round(reading.windSpeed)} mph{" "}
+              {compassPoint(reading.windDirection)}
+              {reading.windGust !== null && reading.windGust > reading.windSpeed + 2 &&
+                `, gusting ${Math.round(reading.windGust)}`}{" "}
+              · {Math.round(reading.cloudCover)}% cloud ·{" "}
+              {reading.rainfall > 0 ? `${reading.rainfall.toFixed(1)} mm` : "dry"}
+              {reading.rainChance !== null && ` (${Math.round(reading.rainChance)}%)`}
+            </p>
           </div>
-        ))}
-      </dl>
+
+          <div className="flex shrink-0 items-center gap-3">
+            <p className={cn("tabular text-2xl font-bold leading-none", tone.text)}>
+              {score.overall}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onChoose({ date, teeTime: clock })}
+            >
+              Take a proper look
+            </Button>
+          </div>
+        </div>
+
+        <dl className="mt-3 grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
+          {score.factors.map((factor) => (
+            <div key={factor.key} className="flex items-center gap-2">
+              <dt className="w-20 shrink-0 text-xs text-muted-foreground">
+                {factor.label}
+              </dt>
+              <dd className="flex min-w-0 flex-1 items-center gap-2">
+                <ScoreBar score={factor.score} className="h-1.5 flex-1" />
+                <span
+                  className={cn(
+                    "tabular w-7 shrink-0 text-right text-xs font-medium",
+                    TONE[toneFor(factor.score)].text
+                  )}
+                >
+                  {factor.score}
+                </span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </motion.div>
     </div>
   );
 }
