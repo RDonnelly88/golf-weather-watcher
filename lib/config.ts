@@ -20,12 +20,15 @@ export const DEFAULT_COURSE: Course = {
 };
 
 /**
- * The shortlist offered before anything is typed.
+ * The shortlist offered before anything is typed, and before anybody has
+ * saved a course of their own.
  *
  * Search reaches every course in the world; this is only a way past the
- * keyboard for the handful that come up most.
+ * keyboard for the handful that come up most. It is deliberately a constant
+ * rather than a seed for the saved list — seeding would freeze this list at
+ * whatever it said the first time somebody opened the app.
  */
-export const FAVOURITE_COURSES: Course[] = [
+export const POPULAR_COURSES: Course[] = [
   DEFAULT_COURSE,
   { name: "Carnoustie, Scotland", latitude: 56.4986, longitude: -2.7108 },
   { name: "Royal Troon, Scotland", latitude: 55.5343, longitude: -4.6494 },
@@ -33,6 +36,18 @@ export const FAVOURITE_COURSES: Course[] = [
   { name: "Pebble Beach, California", latitude: 36.5686, longitude: -121.949 },
   { name: "Augusta National, Georgia", latitude: 33.5031, longitude: -82.0197 },
 ];
+
+/**
+ * One course, identified.
+ *
+ * Two courses can share a name — there are four Royal Golf Clubs — so the
+ * coordinates are part of who a course is. Rounded, because a place searched
+ * for twice comes back with the same position to about a metre and not always
+ * to the last decimal.
+ */
+export function courseKey(course: Course): string {
+  return `${course.name}@${course.latitude.toFixed(4)},${course.longitude.toFixed(4)}`;
+}
 
 export const ROUND = {
   /** Hours a round can be set to. Four is a full eighteen at a decent pace. */
@@ -53,6 +68,26 @@ export const FORECAST = {
   /** The archive's own reach. */
   archiveFrom: "1940-01-01",
 } as const;
+
+/**
+ * The week ahead, hour by hour.
+ *
+ * Every hour anybody would tee off in, which in the far north of the range is
+ * more hours than there is daylight for — the ones outside it are drawn as
+ * unplayable rather than left out, because where the light runs out is part of
+ * what the grid is for.
+ */
+export const OUTLOOK = {
+  days: 7,
+  firstHour: 6,
+  lastHour: 22,
+} as const;
+
+/** The columns of the grid: 06, 07, … 22. */
+export const OUTLOOK_HOURS: number[] = Array.from(
+  { length: OUTLOOK.lastHour - OUTLOOK.firstHour + 1 },
+  (_, i) => OUTLOOK.firstHour + i
+);
 
 export const SEARCH = {
   /** Nominatim asks for no more than one call a second; a pause beats a queue. */

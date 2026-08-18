@@ -94,6 +94,29 @@ export function toneFor(score: number): Tone {
 }
 
 /**
+ * Five steps of a score, for anything that has to say how good a number is in
+ * colour alone.
+ *
+ * Finer than `toneFor`, and deliberately nested inside it: one and two are
+ * both poor, three is fair, four and five are both good. A grid coloured on
+ * this scale and a bar coloured on that one can never disagree about which
+ * side of the line a score falls.
+ */
+export type HeatBand = 1 | 2 | 3 | 4 | 5;
+
+const HEAT_THRESHOLDS: { under: number; band: HeatBand }[] = [
+  { under: 25, band: 1 },
+  { under: TONE_THRESHOLDS.fair, band: 2 },
+  { under: TONE_THRESHOLDS.good, band: 3 },
+  { under: 90, band: 4 },
+  { under: Infinity, band: 5 },
+];
+
+export function heatBand(score: number): HeatBand {
+  return HEAT_THRESHOLDS.find((step) => score < step.under)?.band ?? 5;
+}
+
+/**
  * A band table is read in order and the first `upTo` the value falls under
  * wins, so the boundaries can't overlap or leave a gap the way a list of
  * min/max pairs can.

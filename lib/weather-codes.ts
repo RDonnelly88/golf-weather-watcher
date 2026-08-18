@@ -61,3 +61,25 @@ const UNKNOWN: Sky = { label: "Cloudy", kind: "cloudy" };
 export function describeSky(code: number): Sky {
   return CODES[code] ?? UNKNOWN;
 }
+
+/**
+ * Worst first. A window with one thundery hour in it is a thundery window —
+ * what you want off a four-hour forecast is the thing that would stop you,
+ * not the thing that happened most often.
+ */
+const SEVERITY: SkyKind[] = [
+  "thunderstorm",
+  "snow",
+  "rain",
+  "drizzle",
+  "fog",
+  "cloudy",
+  "partly-cloudy",
+  "clear",
+];
+
+/** The one sky to draw for a run of hours. */
+export function dominantSky(codes: number[]): SkyKind {
+  const kinds = new Set(codes.map((code) => describeSky(code).kind));
+  return SEVERITY.find((kind) => kinds.has(kind)) ?? UNKNOWN.kind;
+}

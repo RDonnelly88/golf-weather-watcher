@@ -58,6 +58,32 @@ export interface RoundForecast {
   source: "forecast" | "archive";
 }
 
+/** One day of the week ahead, and when the sun is up on it. */
+interface DayLight {
+  date: string;
+  sunrise: string | null;
+  sunset: string | null;
+}
+
+/**
+ * Several days of weather in one answer.
+ *
+ * Fetched whole rather than a window at a time: the outlook asks the same
+ * question of twenty-one windows across seven days, and twenty-one calls for
+ * one location's week is a lot of asking for data that arrives together.
+ */
+export interface WeekForecast {
+  days: DayLight[];
+  hours: HourlyReading[];
+  /**
+   * Seconds the course is ahead of UTC. Carried because "has that slot been
+   * and gone" is a question about the clock at the course, not the clock on
+   * the device asking — a morning in Auckland is not over because it is
+   * evening in Fife.
+   */
+  utcOffsetSeconds: number;
+}
+
 /** What was asked for: a date, a tee time and a length. */
 export interface RoundRequest {
   latitude: number;
@@ -71,6 +97,17 @@ export interface RoundRequest {
 }
 
 /**
+ * The local timestamp of an hour counted from a date's midnight.
+ *
+ * Hours past twenty-three roll into the next day, which is what makes a round
+ * that runs past midnight expressible at all.
+ */
+export function hourStamp(date: string, hour: number): string {
+  const day = format(addDays(parseISO(date), Math.floor(hour / 24)), "yyyy-MM-dd");
+  return `${day}T${String(hour % 24).padStart(2, "0")}:00`;
+}
+
+/**
  * The local timestamps a round covers, in order.
  *
  * Built from the request rather than by counting into the response's arrays,
@@ -78,13 +115,9 @@ export interface RoundRequest {
  * midnight — true of every day until a round runs past one.
  */
 export function roundHours(request: Pick<RoundRequest, "date" | "startHour" | "length">): string[] {
-  const day = parseISO(request.date);
-
-  return Array.from({ length: request.length }, (_, i) => {
-    const hour = request.startHour + i;
-    const date = format(addDays(day, Math.floor(hour / 24)), "yyyy-MM-dd");
-    return `${date}T${String(hour % 24).padStart(2, "0")}:00`;
-  });
+  return Array.from({ length: request.length }, (_, i) =>
+    hourStamp(request.date, request.startHour + i)
+  );
 }
 
 /** The last calendar date a round touches, which is what the API is asked for. */

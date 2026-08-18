@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, parseISO } from "date-fns";
+import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 import { z } from "zod";
 
 import { FORECAST } from "@/lib/config";
@@ -8,6 +8,7 @@ import {
   type HourlyReading,
   type RoundForecast,
   type RoundRequest,
+  type WeekForecast,
 } from "@/lib/forecast";
 
 /**
@@ -70,11 +71,15 @@ const ResponseSchema = z.object({
   }),
   daily: z
     .object({
+      time: z.array(z.string()).optional(),
       sunrise: z.array(z.string()).optional(),
       sunset: z.array(z.string()).optional(),
     })
     .optional(),
+  utc_offset_seconds: z.number().optional(),
 });
+
+type Parsed = z.infer<typeof ResponseSchema>;
 
 const ErrorSchema = z.object({ reason: z.string() });
 
@@ -127,36 +132,39 @@ function reading(
 }
 
 /**
- * The hours of one round, from whichever model holds the day.
+ * One request to whichever model holds the days asked for.
  *
- * The response is asked for whole days and then narrowed to the round by
- * matching timestamps, so a round that runs past midnight keeps every hour of
- * itself.
+ * Everything about talking to Open-Meteo is here — which endpoint, which
+ * variables, which units — so a second kind of question is a second way of
+ * reading the answer rather than a second copy of the query.
  */
-export async function fetchRound(
-  request: RoundRequest,
+async function fetchHourly(
+  request: {
+    latitude: number;
+    longitude: number;
+    startDate: string;
+    endDate: string;
+    source: "forecast" | "archive";
+  },
   signal?: AbortSignal
-): Promise<RoundForecast> {
-  const source = sourceFor(request.date);
-  const wanted = roundHours(request);
-
+): Promise<Parsed> {
   const params = new URLSearchParams({
     latitude: String(request.latitude),
     longitude: String(request.longitude),
     hourly: [
       ...COMMON_HOURLY,
-      ...(source === "forecast" ? FORECAST_ONLY_HOURLY : []),
+      ...(request.source === "forecast" ? FORECAST_ONLY_HOURLY : []),
     ].join(","),
     daily: "sunrise,sunset",
-    start_date: request.date,
-    end_date: lastDay(request),
+    start_date: request.startDate,
+    end_date: request.endDate,
     // Local to the course, which is the only clock a tee time means anything on.
     timezone: "auto",
     wind_speed_unit: "mph",
   });
 
   const response = await fetch(
-    `${source === "archive" ? ARCHIVE_URL : FORECAST_URL}?${params}`,
+    `${request.source === "archive" ? ARCHIVE_URL : FORECAST_URL}?${params}`,
     { signal, headers: { accept: "application/json" } }
   );
 
@@ -174,12 +182,43 @@ export async function fetchRound(
     throw new ForecastError("The weather service sent something unreadable.");
   }
 
-  const { hourly, daily } = parsed.data;
-  const index = new Map(hourly.time.map((time, i) => [time, i]));
+  return parsed.data;
+}
 
-  const hours = wanted.flatMap((time) => {
-    const found = index.get(time);
-    return found === undefined ? [] : [reading(time, found, hourly)];
+/** Every hour in the response, keyed by its local timestamp. */
+function readings(hourly: Parsed["hourly"]): Map<string, HourlyReading> {
+  return new Map(
+    hourly.time.map((time, index) => [time, reading(time, index, hourly)])
+  );
+}
+
+/**
+ * The hours of one round, from whichever model holds the day.
+ *
+ * The response is asked for whole days and then narrowed to the round by
+ * matching timestamps, so a round that runs past midnight keeps every hour of
+ * itself.
+ */
+export async function fetchRound(
+  request: RoundRequest,
+  signal?: AbortSignal
+): Promise<RoundForecast> {
+  const source = sourceFor(request.date);
+  const data = await fetchHourly(
+    {
+      latitude: request.latitude,
+      longitude: request.longitude,
+      startDate: request.date,
+      endDate: lastDay(request),
+      source,
+    },
+    signal
+  );
+
+  const byTime = readings(data.hourly);
+  const hours = roundHours(request).flatMap((time) => {
+    const found = byTime.get(time);
+    return found ? [found] : [];
   });
 
   if (hours.length === 0) {
@@ -190,8 +229,48 @@ export async function fetchRound(
 
   return {
     hours,
-    sunrise: daily?.sunrise?.[0] ?? null,
-    sunset: daily?.sunset?.[0] ?? null,
+    sunrise: data.daily?.sunrise?.[0] ?? null,
+    sunset: data.daily?.sunset?.[0] ?? null,
     source,
+  };
+}
+
+/**
+ * A run of whole days at one place, for the outlook.
+ *
+ * Always the forecast model: the week ahead is the only week it is asked
+ * about.
+ */
+export async function fetchWeek(
+  request: { latitude: number; longitude: number; days: number },
+  signal?: AbortSignal,
+  today = new Date()
+): Promise<WeekForecast> {
+  const start = format(today, "yyyy-MM-dd");
+  const data = await fetchHourly(
+    {
+      latitude: request.latitude,
+      longitude: request.longitude,
+      startDate: start,
+      endDate: format(addDays(today, request.days - 1), "yyyy-MM-dd"),
+      source: "forecast",
+    },
+    signal
+  );
+
+  const days = (data.daily?.time ?? []).map((date, index) => ({
+    date,
+    sunrise: data.daily?.sunrise?.[index] ?? null,
+    sunset: data.daily?.sunset?.[index] ?? null,
+  }));
+
+  if (days.length === 0) {
+    throw new ForecastError("No outlook is available for that course.");
+  }
+
+  return {
+    days,
+    hours: [...readings(data.hourly).values()],
+    utcOffsetSeconds: data.utc_offset_seconds ?? 0,
   };
 }

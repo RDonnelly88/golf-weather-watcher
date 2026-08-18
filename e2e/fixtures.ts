@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import type { HourlyReading, RoundForecast } from "@/lib/forecast";
+import type { HourlyReading, RoundForecast, WeekForecast } from "@/lib/forecast";
 import type { Place } from "@/lib/places";
 
 /**
@@ -12,7 +12,21 @@ import type { Place } from "@/lib/places";
  * these instead, so a difference between two runs is a difference in the app.
  */
 
-const DATE = "2026-09-26";
+/**
+ * The day everything is photographed on.
+ *
+ * Frozen so that "today" in the date field, the day names down the outlook and
+ * the windows that have already gone are the same in every run — otherwise no
+ * two screenshots can be compared.
+ */
+export const TODAY = "2026-09-26";
+
+const DATE = TODAY;
+
+/** Ten in the morning at a course an hour ahead of UTC. */
+export async function freezeClock(page: Page) {
+  await page.clock.setFixedTime(new Date(`${TODAY}T09:00:00Z`));
+}
 
 function hour(at: number, overrides: Partial<HourlyReading> = {}): HourlyReading {
   return {
@@ -79,12 +93,75 @@ const PLACES: Place[] = [
   { id: "2", name: "Carnoustie", detail: "Angus, Scotland", latitude: 56.5, longitude: -2.71, kind: "town" },
 ];
 
-/** Serves both route handlers from the fixtures above. */
+/** Serves all three route handlers from the fixtures above. */
 export async function serveWeather(page: Page, forecast: RoundForecast = FINE) {
   await page.route("**/api/forecast**", (route) =>
     route.fulfill({ json: forecast })
   );
+  await page.route("**/api/outlook**", (route) => route.fulfill({ json: WEEK }));
   await page.route("**/api/places**", (route) => route.fulfill({ json: PLACES }));
+}
+
+/**
+ * A week at one course, turning from a fine start to a foul middle and back.
+ *
+ * Generated rather than written out: seven days of hourly weather is a
+ * hundred and sixty-eight readings, and the point of it is the shape of the
+ * week rather than any one hour in it.
+ */
+function week(): WeekForecast {
+  const days = Array.from({ length: 7 }, (_, offset) => {
+    const date = new Date(`${TODAY}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + offset);
+    return date.toISOString().slice(0, 10);
+  });
+
+  // A run of weather with something of everything in it, so the grid shows
+  // each of the three tones and each kind of sky.
+  const shape = [
+    { temperature: 18, wind: 6, rain: 0, chance: 10, cloud: 20, code: 1 },
+    { temperature: 17, wind: 9, rain: 0, chance: 30, cloud: 55, code: 2 },
+    { temperature: 13, wind: 16, rain: 0.8, chance: 70, cloud: 85, code: 61 },
+    { temperature: 8, wind: 24, rain: 2.6, chance: 95, cloud: 100, code: 82 },
+    { temperature: 11, wind: 14, rain: 0.3, chance: 55, cloud: 75, code: 51 },
+    { temperature: 15, wind: 8, rain: 0, chance: 20, cloud: 40, code: 2 },
+    { temperature: 19, wind: 5, rain: 0, chance: 5, cloud: 10, code: 0 },
+  ];
+
+  return {
+    utcOffsetSeconds: 3600,
+    days: days.map((date) => ({
+      date,
+      sunrise: `${date}T07:02`,
+      sunset: `${date}T19:14`,
+    })),
+    hours: days.flatMap((date, index) => {
+      const day = shape[index];
+      return Array.from({ length: 24 }, (_, at) =>
+        hour(at, {
+          time: `${date}T${String(at).padStart(2, "0")}:00`,
+          // Coolest before dawn, warmest mid-afternoon.
+          temperature: day.temperature - Math.abs(15 - at) * 0.4,
+          feelsLike: day.temperature - Math.abs(15 - at) * 0.4 - 2,
+          windSpeed: day.wind,
+          windGust: day.wind + 5,
+          rainfall: day.rain,
+          rainChance: day.chance,
+          cloudCover: day.cloud,
+          code: day.code,
+        })
+      );
+    }),
+  };
+}
+
+export const WEEK: WeekForecast = week();
+
+/** Seeds the courses this browser has kept, as if they had been starred. */
+export async function saveCourses(page: Page, courses: { name: string; latitude: number; longitude: number }[]) {
+  await page.addInitScript((saved) => {
+    localStorage.setItem("golf-weather-watcher-favourites", JSON.stringify(saved));
+  }, courses);
 }
 
 /** Serves a failure, for the state where there is no answer to give. */

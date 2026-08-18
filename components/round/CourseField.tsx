@@ -8,9 +8,9 @@
 /* eslint-disable jsx-a11y/prefer-tag-over-role */
 
 import { useId, useMemo, useRef, useState } from "react";
-import { ChevronsUpDown, Flag, LoaderCircle, MapPin, Search } from "lucide-react";
+import { ChevronsUpDown, Flag, LoaderCircle, MapPin, Search, Star } from "lucide-react";
 
-import { FAVOURITE_COURSES, SEARCH, type Course } from "@/lib/config";
+import { POPULAR_COURSES, SEARCH, courseKey, type Course } from "@/lib/config";
 import type { Place } from "@/lib/places";
 import { usePlaceSearch } from "@/hooks/usePlaceSearch";
 import { cn } from "@/lib/utils";
@@ -27,26 +27,32 @@ interface Option {
   course: Course;
   detail: string;
   golf: boolean;
+  saved: boolean;
 }
 
-const favourites: Option[] = FAVOURITE_COURSES.map((course) => ({
-  key: course.name,
-  course,
-  detail: "",
-  golf: true,
-}));
+interface Group {
+  label: string;
+  options: Option[];
+}
 
-function toOption(place: Place): Option {
+function toOption(place: Place, saved: Set<string>): Option {
+  const course = {
+    name: place.name,
+    latitude: place.latitude,
+    longitude: place.longitude,
+  };
+
   return {
     key: place.id,
-    course: {
-      name: place.name,
-      latitude: place.latitude,
-      longitude: place.longitude,
-    },
+    course,
     detail: place.detail,
     golf: place.kind === "golf",
+    saved: saved.has(courseKey(course)),
   };
+}
+
+function toListedOption(course: Course, saved: boolean): Option {
+  return { key: courseKey(course), course, detail: "", golf: true, saved };
 }
 
 /**
@@ -56,14 +62,21 @@ function toOption(place: Place): Option {
  * options are one stop in the tab order, the arrow keys move between them, and
  * the input says what it controls, so the whole thing can be worked without a
  * mouse or read out by a screen reader.
+ *
+ * Saved courses come first and the popular shortlist follows it, minus
+ * anything already saved — the same course listed twice is a list you have to
+ * read twice.
  */
 export default function CourseField({
   id,
   course,
+  saved,
   onChange,
 }: {
   id: string;
   course: Course;
+  /** The courses this browser has kept. */
+  saved: Course[];
   onChange: (course: Course) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -74,14 +87,42 @@ export default function CourseField({
 
   const search = usePlaceSearch(term);
   const searching = search.isFetching || search.pending;
+  const asking = term.trim().length >= SEARCH.minQueryLength;
 
-  const options = useMemo(
-    () =>
-      term.trim().length >= SEARCH.minQueryLength
-        ? (search.data ?? []).map(toOption)
-        : favourites,
-    [term, search.data]
-  );
+  const groups = useMemo<Group[]>(() => {
+    const savedKeys = new Set(saved.map(courseKey));
+
+    if (asking) {
+      return [
+        {
+          label: "Search results",
+          options: (search.data ?? []).map((place) => toOption(place, savedKeys)),
+        },
+      ];
+    }
+
+    const popular = POPULAR_COURSES.filter(
+      (candidate) => !savedKeys.has(courseKey(candidate))
+    );
+
+    return [
+      saved.length > 0
+        ? {
+            label: "Your courses",
+            options: saved.map((entry) => toListedOption(entry, true)),
+          }
+        : null,
+      popular.length > 0
+        ? {
+            label: "Popular",
+            options: popular.map((entry) => toListedOption(entry, false)),
+          }
+        : null,
+    ].filter((group): group is Group => group !== null);
+  }, [asking, saved, search.data]);
+
+  /** Flattened, because that is the order the arrow keys walk. */
+  const options = useMemo(() => groups.flatMap((group) => group.options), [groups]);
 
   function choose(option: Option) {
     onChange(option.course);
@@ -172,10 +213,6 @@ export default function CourseField({
           )}
         </div>
 
-        {term.trim().length < SEARCH.minQueryLength && (
-          <p className="eyebrow px-3 pt-2">Favourites</p>
-        )}
-
         {/* The options are described by the input above rather than focused
             themselves: aria-activedescendant is what keeps the caret in the
             search field while the arrow keys walk the list. */}
@@ -185,38 +222,57 @@ export default function CourseField({
           aria-label="Courses"
           className="max-h-72 overflow-y-auto p-1"
         >
-          {options.map((option, index) => (
-            // The list is driven from the input's key handler, and `option`
-            // has no native tag outside a <select>.
-            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/prefer-tag-over-role
-            <div
-              key={option.key}
-              id={`${listId}-${option.key}`}
-              role="option"
-              // Never focused itself — aria-activedescendant points the input
-              // at it — but it has to be focusable for the role to be legal.
-              tabIndex={-1}
-              aria-selected={index === highlighted}
-              onClick={() => choose(option)}
-              onMouseEnter={() => setHighlighted(index)}
-              className={cn(
-                "flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors",
-                index === highlighted && "bg-surface-2"
-              )}
-            >
-              {option.golf ? (
-                <Flag className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-              ) : (
-                <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-              )}
-              <span className="min-w-0">
-                <span className="block truncate">{option.course.name}</span>
-                {option.detail && (
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {option.detail}
-                  </span>
-                )}
-              </span>
+          {groups.map((group) => (
+            <div key={group.label} role="group" aria-label={group.label}>
+              <p className="eyebrow px-2 pb-1 pt-2" aria-hidden>
+                {group.label}
+              </p>
+
+              {group.options.map((option) => {
+                const index = options.indexOf(option);
+
+                return (
+                  // The list is driven from the input's key handler, and
+                  // `option` has no native tag outside a <select>.
+                  // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+                  <div
+                    key={option.key}
+                    id={`${listId}-${option.key}`}
+                    role="option"
+                    // Never focused itself — aria-activedescendant points the
+                    // input at it — but it has to be focusable for the role to
+                    // be legal.
+                    tabIndex={-1}
+                    aria-selected={index === highlighted}
+                    onClick={() => choose(option)}
+                    onMouseEnter={() => setHighlighted(index)}
+                    className={cn(
+                      "flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors",
+                      index === highlighted && "bg-surface-2"
+                    )}
+                  >
+                    {option.golf ? (
+                      <Flag className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+                    ) : (
+                      <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{option.course.name}</span>
+                      {option.detail && (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {option.detail}
+                        </span>
+                      )}
+                    </span>
+                    {option.saved && (
+                      <Star
+                        className="h-3.5 w-3.5 shrink-0 fill-current text-accent"
+                        aria-hidden
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ))}
 

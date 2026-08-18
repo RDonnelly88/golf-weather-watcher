@@ -1,7 +1,15 @@
 import fs from "node:fs";
 import { test, type Page } from "@playwright/test";
 
-import { FINE, FOUL, RECORDED, serveFailure, serveWeather } from "./fixtures";
+import {
+  FINE,
+  FOUL,
+  RECORDED,
+  freezeClock,
+  saveCourses,
+  serveFailure,
+  serveWeather,
+} from "./fixtures";
 
 /**
  * The visual record. Not assertions — a folder of screenshots to look at.
@@ -16,11 +24,29 @@ const dir = (project: string) => `e2e/screenshots/${project}`;
 
 async function shot(page: Page, project: string, name: string) {
   fs.mkdirSync(dir(project), { recursive: true });
-  await page.screenshot({ path: `${dir(project)}/${name}.png`, fullPage: true });
+
+  /*
+   * Clipped to the width of the page rather than left to `fullPage` alone.
+   * A horizontally scrolling panel — the heatmap — leaves layout overflow that
+   * `documentElement.scrollWidth` counts even though the document itself does
+   * not scroll, and a full-page shot sized from that number is the page with a
+   * fat empty margin down one side.
+   */
+  const page_size = await page.evaluate(() => ({
+    width: document.documentElement.clientWidth,
+    height: document.documentElement.scrollHeight,
+  }));
+
+  await page.screenshot({
+    path: `${dir(project)}/${name}.png`,
+    fullPage: true,
+    clip: { x: 0, y: 0, ...page_size },
+  });
 }
 
 /** Flip the theme the same way the toggle does, without needing it on screen. */
 async function setTheme(page: Page, theme: "light" | "dark") {
+  await freezeClock(page);
   await page.emulateMedia({ colorScheme: theme });
   await page.addInitScript((choice) => {
     localStorage.setItem("golf-weather-theme", choice);
@@ -61,7 +87,8 @@ for (const theme of ["light", "dark"] as const) {
     await serveWeather(page, FINE);
     await page.goto("/");
     await settled(page);
-    await page.getByRole("button", { name: /13:00/ }).click();
+    // Anchored, so it can't also match a heatmap cell at one o'clock.
+    await page.getByRole("button", { name: /^13:00 / }).click();
     await page.getByRole("button", { name: /Bands/ }).first().click();
     await shot(page, info.project.name, `03-opened-${theme}`);
   });
@@ -71,8 +98,21 @@ for (const theme of ["light", "dark"] as const) {
     await serveWeather(page, FINE);
     await page.goto("/");
     await settled(page);
-    await page.getByLabel("Course").click();
+    await page.getByLabel("Course", { exact: true }).click();
     await shot(page, info.project.name, `04-courses-${theme}`);
+  });
+
+  test(`saved courses — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await saveCourses(page, [
+      { name: "Machrihanish Dunes", latitude: 55.4325, longitude: -5.7167 },
+      { name: "Prestwick, Scotland", latitude: 55.4956, longitude: -4.6136 },
+    ]);
+    await page.goto("/");
+    await settled(page);
+    await page.getByLabel("Course", { exact: true }).click();
+    await shot(page, info.project.name, `04b-saved-${theme}`);
   });
 
   test(`the date picker — ${theme}`, async ({ page }, info) => {
@@ -90,6 +130,26 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto("/");
     await settled(page);
     await shot(page, info.project.name, `06-recorded-${theme}`);
+  });
+
+  test(`the week ahead — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await page.goto("/");
+    await settled(page);
+    await page.getByRole("heading", { name: "The week ahead" }).scrollIntoViewIfNeeded();
+    await shot(page, info.project.name, `08-outlook-${theme}`);
+  });
+
+  test(`an hour in the week, picked out — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await page.goto("/");
+    await settled(page);
+    const week = page.getByRole("region", { name: "The week ahead" });
+    await page.getByRole("heading", { name: "The week ahead" }).scrollIntoViewIfNeeded();
+    await week.getByRole("button", { name: /14:00 on Tuesday 29 September/ }).click();
+    await shot(page, info.project.name, `09-outlook-open-${theme}`);
   });
 
   test(`nothing to score — ${theme}`, async ({ page }, info) => {
