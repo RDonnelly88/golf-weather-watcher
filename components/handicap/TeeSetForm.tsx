@@ -2,47 +2,35 @@
 
 import { useId, useState } from "react";
 
-import type { TeeSet } from "@/lib/handicap";
+import type { Holes, TeeSet } from "@/lib/handicap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@/components/ui/segmented-control";
 
 /** Blank rather than plausible: a rating nobody typed is a rating nobody can trust. */
-const EMPTY = {
-  name: "",
-  par: "",
-  courseRating: "",
-  slopeRating: "",
-  ninePar: "",
-  nineCourseRating: "",
-  nineSlopeRating: "",
-};
+const EMPTY = { name: "", par: "", courseRating: "", slopeRating: "" };
 
 type Fields = typeof EMPTY;
 
-function fieldsFrom(tee: TeeSet): Fields {
-  return {
-    name: tee.name,
-    par: String(tee.par),
-    courseRating: String(tee.courseRating),
-    slopeRating: String(tee.slopeRating),
-    ninePar: tee.nine ? String(tee.nine.par) : "",
-    nineCourseRating: tee.nine ? String(tee.nine.courseRating) : "",
-    nineSlopeRating: tee.nine ? String(tee.nine.slopeRating) : "",
-  };
-}
+/** What a card of this length tends to say, shown as a hint and never as a value. */
+const PLACEHOLDERS: Record<Holes, Fields> = {
+  18: { name: "White", par: "72", courseRating: "72.6", slopeRating: "125" },
+  9: { name: "White (front nine)", par: "36", courseRating: "36.1", slopeRating: "122" },
+};
 
 function Field({
   id,
   label,
-  hint,
   ...props
-}: { id: string; label: string; hint?: string } & React.ComponentProps<typeof Input>) {
+}: { id: string; label: string } & React.ComponentProps<typeof Input>) {
   return (
     <div className="space-y-1">
       <Label htmlFor={id}>{label}</Label>
       <Input id={id} {...props} />
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -54,9 +42,9 @@ function Field({
  * ratings, and nothing here is pre-filled with a guess: a made-up rating looks
  * exactly like a real one and would quietly wrong every figure below it.
  *
- * The nine-hole ratings are their own three numbers rather than half the
- * eighteen. A nine is rated in its own right, and halving an eighteen-hole
- * rating is not the same thing.
+ * One card, one length. A nine is rated in its own right rather than being
+ * half an eighteen, so it is added as its own set of tees — which is also the
+ * only way to describe a course that has nine holes and nothing else.
  */
 export default function TeeSetForm({
   tee,
@@ -68,52 +56,64 @@ export default function TeeSetForm({
   onSave: (tee: TeeSet) => void;
   onCancel: () => void;
 }) {
-  const [fields, setFields] = useState<Fields>(tee ? fieldsFrom(tee) : EMPTY);
+  const [holes, setHoles] = useState<Holes>(tee?.holes ?? 18);
+  const [fields, setFields] = useState<Fields>(
+    tee
+      ? {
+          name: tee.name,
+          par: String(tee.par),
+          courseRating: String(tee.courseRating),
+          slopeRating: String(tee.slopeRating),
+        }
+      : EMPTY
+  );
   const ids = useId();
   const id = (name: string) => `${ids}-${name}`;
+  const hint = PLACEHOLDERS[holes];
 
   const set = (name: keyof Fields) => (event: React.ChangeEvent<HTMLInputElement>) =>
     setFields((current) => ({ ...current, [name]: event.target.value }));
 
-  const number = (value: string) => (value.trim() === "" ? null : Number(value));
-
   function submit(event: React.FormEvent) {
     event.preventDefault();
 
-    const par = number(fields.par);
-    const courseRating = number(fields.courseRating);
-    const slopeRating = number(fields.slopeRating);
-    if (par === null || courseRating === null || slopeRating === null) return;
-
-    const ninePar = number(fields.ninePar);
-    const nineCourseRating = number(fields.nineCourseRating);
-    const nineSlopeRating = number(fields.nineSlopeRating);
-    // All three or none: two of them is a nine that cannot be scored.
-    const nine =
-      ninePar !== null && nineCourseRating !== null && nineSlopeRating !== null
-        ? { par: ninePar, courseRating: nineCourseRating, slopeRating: nineSlopeRating }
-        : undefined;
+    const par = Number(fields.par);
+    const courseRating = Number(fields.courseRating);
+    const slopeRating = Number(fields.slopeRating);
+    if (![par, courseRating, slopeRating].every(Number.isFinite)) return;
 
     onSave({
       id: tee?.id ?? crypto.randomUUID(),
       name: fields.name.trim() || "Tees",
+      holes,
       par,
       courseRating,
       slopeRating,
-      nine,
     });
   }
 
   return (
     <form onSubmit={submit} className="rounded-lg border border-border bg-surface-2/40 p-3">
-      {/* Grouped and named, because "Par" appears twice in this form and a
-          label heard on its own has to say which one it is. */}
-      <fieldset className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <legend className="sr-only">The eighteen</legend>
+      {/* First, because it says what the three numbers under it are ratings of. */}
+      <SegmentedControl
+        label="Holes these tees are rated over"
+        value={String(holes)}
+        onValueChange={(next) => setHoles(Number(next) as Holes)}
+        className="mb-3"
+      >
+        <SegmentedControlItem value="18" className="h-8 px-3 text-xs">
+          18 holes
+        </SegmentedControlItem>
+        <SegmentedControlItem value="9" className="h-8 px-3 text-xs">
+          9 holes
+        </SegmentedControlItem>
+      </SegmentedControl>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Field
           id={id("name")}
           label="Tees"
-          placeholder="White"
+          placeholder={hint.name}
           value={fields.name}
           onChange={set("name")}
         />
@@ -121,7 +121,7 @@ export default function TeeSetForm({
           id={id("par")}
           label="Par"
           inputMode="numeric"
-          placeholder="72"
+          placeholder={hint.par}
           value={fields.par}
           onChange={set("par")}
           required
@@ -130,7 +130,7 @@ export default function TeeSetForm({
           id={id("cr")}
           label="Course rating"
           inputMode="decimal"
-          placeholder="72.6"
+          placeholder={hint.courseRating}
           value={fields.courseRating}
           onChange={set("courseRating")}
           required
@@ -139,40 +139,12 @@ export default function TeeSetForm({
           id={id("slope")}
           label="Slope rating"
           inputMode="numeric"
-          placeholder="125"
+          placeholder={hint.slopeRating}
           value={fields.slopeRating}
           onChange={set("slopeRating")}
           required
         />
-      </fieldset>
-
-      <fieldset className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <legend className="eyebrow mb-1">The nine, if the card rates one</legend>
-        <Field
-          id={id("nine-par")}
-          label="Par over nine"
-          inputMode="numeric"
-          placeholder="36"
-          value={fields.ninePar}
-          onChange={set("ninePar")}
-        />
-        <Field
-          id={id("nine-cr")}
-          label="Course rating over nine"
-          inputMode="decimal"
-          placeholder="36.1"
-          value={fields.nineCourseRating}
-          onChange={set("nineCourseRating")}
-        />
-        <Field
-          id={id("nine-slope")}
-          label="Slope rating over nine"
-          inputMode="numeric"
-          placeholder="122"
-          value={fields.nineSlopeRating}
-          onChange={set("nineSlopeRating")}
-        />
-      </fieldset>
+      </div>
 
       <div className="mt-4 flex gap-2">
         <Button type="submit" size="sm">

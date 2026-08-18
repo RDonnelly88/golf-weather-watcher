@@ -11,20 +11,31 @@ import {
   type TeeSet,
 } from "@/lib/handicap";
 
-/** A par 72 rated above its par, with nine-hole ratings on the card too. */
+/** A par 72 rated above its par. */
 const WHITES: TeeSet = {
   id: "whites",
   name: "White",
+  holes: 18,
   par: 72,
   courseRating: 72.6,
   slopeRating: 125,
-  nine: { par: 36, courseRating: 36.1, slopeRating: 122 },
 };
 
-/** No nine-hole ratings, which plenty of cards don't carry. */
+/** The same course's front nine, rated in its own right. */
+const WHITES_NINE: TeeSet = {
+  id: "whites-9",
+  name: "White",
+  holes: 9,
+  par: 36,
+  courseRating: 36.1,
+  slopeRating: 122,
+};
+
+/** A par 70 rated under its par, which gives strokes away. */
 const YELLOWS: TeeSet = {
   id: "yellows",
   name: "Yellow",
+  holes: 18,
   par: 70,
   courseRating: 69.2,
   slopeRating: 118,
@@ -33,30 +44,40 @@ const YELLOWS: TeeSet = {
 describe("course handicap", () => {
   it("takes the slope and the gap between rating and par", () => {
     // 12 × (125 / 113) + (72.6 − 72) = 13.27 + 0.6 = 13.87
-    expect(courseHandicap(12, WHITES, 18)).toBe(14);
+    expect(courseHandicap(12, WHITES)).toBe(14);
   });
 
   it("gives strokes away on a course rated under its par", () => {
     // 12 × (118 / 113) + (69.2 − 70) = 12.53 − 0.8 = 11.73
-    expect(courseHandicap(12, YELLOWS, 18)).toBe(12);
+    expect(courseHandicap(12, YELLOWS)).toBe(12);
   });
 
   it("halves the index over nine holes", () => {
     // 6 × (122 / 113) + (36.1 − 36) = 6.48 + 0.1 = 6.58
-    expect(courseHandicap(12, WHITES, 9)).toBe(7);
+    expect(courseHandicap(12, WHITES_NINE)).toBe(7);
   });
 
-  it("has nothing to say for nine when the card carries no nine-hole rating", () => {
-    expect(courseHandicap(12, YELLOWS, 9)).toBeNull();
+  it("answers a course that has nine holes and nothing else", () => {
+    // Nothing about a nine leans on an eighteen it might not have.
+    const only: TeeSet = {
+      id: "only",
+      name: "Yellow",
+      holes: 9,
+      par: 33,
+      courseRating: 32.4,
+      slopeRating: 110,
+    };
+    // 6 × (110 / 113) + (32.4 − 33) = 5.84 − 0.6 = 5.24
+    expect(courseHandicap(12, only)).toBe(5);
   });
 
   it("handles a plus handicap, where the strokes go the other way", () => {
     // −2.4 × (125 / 113) + 0.6 = −2.65 + 0.6 = −2.05
-    expect(courseHandicap(-2.4, WHITES, 18)).toBe(-2);
+    expect(courseHandicap(-2.4, WHITES)).toBe(-2);
   });
 
   it("gives a scratch player the difference between rating and par", () => {
-    expect(courseHandicap(0, WHITES, 18)).toBe(1);
+    expect(courseHandicap(0, WHITES)).toBe(1);
   });
 });
 
@@ -90,51 +111,51 @@ describe("the nine you didn't play", () => {
 describe("score differential", () => {
   it("takes the course out of the score", () => {
     // (85 − 72.6) × 113 / 125 = 11.2
-    expect(scoreDifferential(85, WHITES, 18, 12)).toBe(11.2);
+    expect(scoreDifferential(85, WHITES, 12)).toBe(11.2);
   });
 
   it("returns less than the score suggests on a hard course", () => {
     const hard: TeeSet = { ...WHITES, slopeRating: 140 };
-    expect(scoreDifferential(85, hard, 18, 12)).toBeLessThan(
-      scoreDifferential(85, WHITES, 18, 12)!
+    expect(scoreDifferential(85, hard, 12)).toBeLessThan(
+      scoreDifferential(85, WHITES, 12)
     );
   });
 
   it("makes a nine up to eighteen with the expected differential", () => {
     // (43 − 36.1) × 113 / 122 = 6.39, plus 7.41 expected for an index of 12.
-    expect(scoreDifferential(43, WHITES, 9, 12)).toBe(13.8);
+    expect(scoreDifferential(43, WHITES_NINE, 12)).toBe(13.8);
   });
 
-  it("has nothing to say for nine when the card carries no nine-hole rating", () => {
-    expect(scoreDifferential(43, YELLOWS, 9, 12)).toBeNull();
+  it("expects more of the missing nine from a higher index", () => {
+    expect(scoreDifferential(43, WHITES_NINE, 24)).toBeGreaterThan(
+      scoreDifferential(43, WHITES_NINE, 12)
+    );
   });
 
   it("carries one decimal place and no more", () => {
-    const value = scoreDifferential(83, WHITES, 18, 12)!;
+    const value = scoreDifferential(83, WHITES, 12);
     expect(value * 10).toBe(Math.round(value * 10));
   });
 });
 
 describe("the score a differential needs", () => {
   it("inverts the differential", () => {
-    const score = scoreFor(11.2, WHITES, 18, 12)!;
-    expect(scoreDifferential(score, WHITES, 18, 12)).toBeCloseTo(11.2, 1);
+    const score = scoreFor(11.2, WHITES, 12);
+    expect(scoreDifferential(score, WHITES, 12)).toBeCloseTo(11.2, 1);
   });
 
   it("inverts it over nine as well, expected differential and all", () => {
-    const score = scoreFor(13.8, WHITES, 9, 12)!;
-    expect(scoreDifferential(score, WHITES, 9, 12)).toBeCloseTo(13.8, 1);
+    const score = scoreFor(13.8, WHITES_NINE, 12);
+    expect(scoreDifferential(score, WHITES_NINE, 12)).toBeCloseTo(13.8, 1);
   });
 
   it("asks for fewer shots for a better differential", () => {
-    expect(scoreFor(8, WHITES, 18, 12)!).toBeLessThan(
-      scoreFor(14, WHITES, 18, 12)!
-    );
+    expect(scoreFor(8, WHITES, 12)).toBeLessThan(scoreFor(14, WHITES, 12));
   });
 });
 
 describe("the band", () => {
-  const band = scoreBand(12, WHITES, 18, 4);
+  const band = scoreBand(12, WHITES, 4);
 
   it("runs either side of playing to your handicap", () => {
     expect(band).toHaveLength(9);
@@ -167,8 +188,11 @@ describe("the band", () => {
     expect([...differentials].sort((a, b) => a - b)).toEqual(differentials);
   });
 
-  it("has nothing to show for nine holes the card doesn't rate", () => {
-    expect(scoreBand(12, YELLOWS, 9, 4)).toEqual([]);
+  it("runs around the nine's own par over nine holes", () => {
+    const nine = scoreBand(12, WHITES_NINE, 4);
+    // Par 36 plus a course handicap of 7.
+    expect(nine.find((row) => row.expected)?.score).toBe(43);
+    expect(nine.map((row) => row.toPar)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
 });
 

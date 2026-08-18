@@ -174,8 +174,8 @@ export async function saveCourses(page: Page, courses: { name: string; latitude:
 }
 
 /**
- * Seeds a handicap and a set of tees at the default course, as if they had
- * been typed in once off the card.
+ * Seeds a handicap and the tees at the default course, as if they had been
+ * typed in once off the card. The nine is its own set, the way a card rates it.
  */
 export async function saveHandicap(page: Page) {
   await page.addInitScript(() => {
@@ -189,14 +189,23 @@ export async function saveHandicap(page: Page) {
             {
               id: "white",
               name: "White",
+              holes: 18,
               par: 72,
               courseRating: 72.6,
               slopeRating: 132,
-              nine: { par: 36, courseRating: 36.2, slopeRating: 129 },
+            },
+            {
+              id: "white-9",
+              name: "White",
+              holes: 9,
+              par: 36,
+              courseRating: 36.2,
+              slopeRating: 129,
             },
             {
               id: "yellow",
               name: "Yellow",
+              holes: 18,
               par: 72,
               courseRating: 70.9,
               slopeRating: 125,

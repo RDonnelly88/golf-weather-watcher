@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 
-import type { TeeSet } from "@/lib/handicap";
+import type { Holes, TeeSet } from "@/lib/handicap";
 
 const STORAGE_KEY = "golf-weather-watcher-handicap";
 
@@ -12,27 +12,66 @@ const STORAGE_KEY = "golf-weather-watcher-handicap";
  * courses. A slope of nought would divide the whole card by zero, and a rating
  * typed into the wrong box should be refused here rather than three components
  * later.
+ *
+ * The bounds depend on how many holes the card covers, which is why this is
+ * two shapes rather than one with a range loose enough to admit both.
  */
-const NineSchema = z.object({
-  par: z.number().min(20).max(60),
-  courseRating: z.number().min(20).max(60),
-  slopeRating: z.number().min(55).max(155),
-});
+function card(holes: Holes, min: number, max: number) {
+  return z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    holes: z.literal(holes),
+    par: z.number().min(min).max(max),
+    courseRating: z.number().min(min).max(max),
+    slopeRating: z.number().min(55).max(155),
+  });
+}
 
-const TeeSchema = z.object({
+const TeeSchema = z.discriminatedUnion("holes", [card(18, 40, 100), card(9, 20, 60)]);
+
+/**
+ * An eighteen carrying its nine, which is how tees were once kept.
+ *
+ * Read so that a browser holding one doesn't lose the numbers off the card:
+ * the eighteen becomes an entry and the nine, where there was one, becomes
+ * another beside it.
+ */
+const PairedTeeSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   par: z.number().min(40).max(100),
   courseRating: z.number().min(40).max(100),
   slopeRating: z.number().min(55).max(155),
-  nine: NineSchema.optional(),
+  nine: z
+    .object({
+      par: z.number().min(20).max(60),
+      courseRating: z.number().min(20).max(60),
+      slopeRating: z.number().min(55).max(155),
+    })
+    .optional(),
 });
+
+const TeesSchema = z
+  .array(z.union([TeeSchema, PairedTeeSchema]))
+  .transform((entries): TeeSet[] =>
+    entries.flatMap((entry) => {
+      if ("holes" in entry) return [entry];
+
+      const { nine, ...eighteen } = entry;
+      return [
+        { ...eighteen, holes: 18 as const },
+        ...(nine
+          ? [{ id: `${entry.id}-9`, name: entry.name, holes: 9 as const, ...nine }]
+          : []),
+      ];
+    })
+  );
 
 const StoredSchema = z.object({
   /** Null until somebody says what theirs is. Negative is a plus handicap. */
   index: z.number().min(-10).max(54).nullable(),
   /** Keyed by `courseKey`, because a course is rated from every set of tees. */
-  tees: z.record(z.string(), z.array(TeeSchema)),
+  tees: z.record(z.string(), TeesSchema),
   /** The tees you last played there, so the card opens on them. */
   chosen: z.record(z.string(), z.string()),
 });
