@@ -7,10 +7,15 @@ It works anywhere in the world, forwards to the end of the forecast and back to
 1940, and it will tell you why it said what it said — every factor shows the
 band table it was scored against.
 
-Under that is the week ahead at the same course, scored morning, afternoon and
-evening, so the question "when should I book?" has an answer you can look at
-rather than seven forecasts you have to hold in your head. Open a window to see
-why it scored what it did, or hand it to the form above for the full read.
+Under that is the week ahead at the same course as a heatmap — every hour from
+six in the morning to ten at night, coloured by its score and marked with its
+sky — so the question "when should I book?" is a shape you can look at rather
+than seven forecasts you have to hold in your head. Point at an hour for
+everything known about it, or hand it to the form above for the full read.
+
+An hour scores kinder than a whole round in the same weather, because less rain
+falls in one. The grid is for finding the day; the score above it is the round
+you would actually play.
 
 Courses you play often can be saved. They live in your browser, and they sit at
 the top of the picker.
@@ -30,8 +35,7 @@ multiplies the rest.
 
 The exact weights, bands and thresholds live in `lib/scoring.ts`, which is pure
 and has the tests. Nothing else in the app decides what a score is — the week
-ahead runs the same five factors over each of its windows, so a 78 there and a
-78 below it mean the same thing.
+ahead runs the same five factors over every hour of it.
 
 ## Where the weather comes from
 

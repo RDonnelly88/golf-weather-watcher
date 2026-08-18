@@ -44,13 +44,22 @@ export default defineConfig({
         launchOptions: { executablePath },
       },
     },
+    /**
+     * A phone-shaped window rather than an emulated phone.
+     *
+     * The device descriptors change the layout viewport as well as its size,
+     * which leaves `innerHeight` at nearly twice the configured height and
+     * Playwright hit-testing a tap against the wrong element. The thing being
+     * checked here is how the page lays out at four hundred pixels, and that
+     * is the same either way. Touch stays on, so nothing can quietly come to
+     * depend on hovering.
+     */
     {
-      name: "mobile",
+      name: "phone",
       use: {
-        ...devices["Pixel 7"],
-        // The record is of the layout, not the pixels. At the device's own
-        // scale factor a full-page phone shot is half a megabyte.
-        deviceScaleFactor: 1,
+        ...devices["Desktop Chrome"],
+        viewport: { width: 412, height: 900 },
+        hasTouch: true,
         launchOptions: { executablePath },
       },
     },

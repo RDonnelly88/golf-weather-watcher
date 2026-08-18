@@ -55,10 +55,14 @@ sitting in. Compare the strings, or use the helpers in `lib/forecast.ts`.
 `roundHours()`, which knows that. Indexing into the API's arrays by hour does
 not.
 
-**Whether a window has been and gone is a question about the clock at the
+**Whether an hour has been and gone is a question about the clock at the
 course.** A morning in Auckland is not over because it is evening in Fife. The
 week carries the course's UTC offset for exactly this, and `courseTime()` is
 the only thing that should answer it.
+
+**Colour is never the only carrier of a score.** The heatmap paints an hour and
+says nothing in the cell, so the accessible name spells the number out. Any new
+thing drawn on the `--score-*` ramp owes the same.
 
 ## Architecture
 
@@ -90,7 +94,7 @@ works while animating will photograph as nothing.
 | `lib/config.ts` | Every tunable value. Bands and weights are NOT here — the model owns them |
 | `lib/scoring.ts` | The scoring model, pure and tested |
 | `lib/forecast.ts` | The shape of a round and of a week, and the pure work of summarising one |
-| `lib/outlook.ts` | The week cut into windows and scored, pure and tested |
+| `lib/outlook.ts` | The week cut into hours and scored, pure and tested |
 | `lib/open-meteo.ts` | The weather, from whichever of the two models holds the day |
 | `lib/places.ts` | Course search |
 | `lib/comfort.ts` | The readings that don't score but change what you pack |

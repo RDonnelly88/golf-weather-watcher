@@ -119,7 +119,6 @@ export default function Page() {
           <WeekOutlook
             forecast={outlook.data}
             course={settings.course}
-            length={settings.length}
             onChoose={(choice) => {
               update(choice);
               // The form is at the top of the page and the outlook is at the

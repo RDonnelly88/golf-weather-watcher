@@ -70,24 +70,24 @@ export const FORECAST = {
 } as const;
 
 /**
- * The week ahead, at three times of day.
+ * The week ahead, hour by hour.
  *
- * Three slots rather than twenty-four hours because nobody books a round for
- * 11:00 on Thursday off the back of a seven-day forecast — they decide which
- * morning. Each one starts at the hour below and runs for whatever length the
- * round is set to, so the outlook is scored on the round being planned rather
- * than on a window of its own invention.
+ * Every hour anybody would tee off in, which in the far north of the range is
+ * more hours than there is daylight for — the ones outside it are drawn as
+ * unplayable rather than left out, because where the light runs out is part of
+ * what the grid is for.
  */
 export const OUTLOOK = {
   days: 7,
-  slots: [
-    { key: "morning", label: "Morning", startHour: 8 },
-    { key: "afternoon", label: "Afternoon", startHour: 12 },
-    { key: "evening", label: "Evening", startHour: 16 },
-  ],
+  firstHour: 6,
+  lastHour: 22,
 } as const;
 
-export type SlotKey = (typeof OUTLOOK.slots)[number]["key"];
+/** The columns of the grid: 06, 07, … 22. */
+export const OUTLOOK_HOURS: number[] = Array.from(
+  { length: OUTLOOK.lastHour - OUTLOOK.firstHour + 1 },
+  (_, i) => OUTLOOK.firstHour + i
+);
 
 export const SEARCH = {
   /** Nominatim asks for no more than one call a second; a pause beats a queue. */
