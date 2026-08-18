@@ -14,31 +14,26 @@
 /** The neutral slope. A course of average difficulty rates 113. */
 const NEUTRAL_SLOPE = 113;
 
+export type Holes = 9 | 18;
+
 /**
- * One set of tees, as printed on the card.
+ * One set of tees over one number of holes, as printed on the card.
  *
- * A course is rated separately from every set of tees and for nine holes as
- * well as eighteen, which is why this is a list per course rather than three
- * numbers on it. The nine-hole ratings are optional because plenty of cards
- * only carry the eighteen.
+ * A course is rated separately from every set of tees and separately over nine
+ * holes and eighteen, so a nine is its own entry rather than three extra
+ * numbers hanging off an eighteen. That is what lets a nine-hole course be
+ * described at all, and it makes playing nine instead of eighteen a matter of
+ * picking the other card rather than a switch that some tees can't honour.
  */
 export interface TeeSet {
   id: string;
   /** What the card calls them: "White", "Yellow", "Championship". */
   name: string;
-  par: number;
-  courseRating: number;
-  slopeRating: number;
-  nine?: NineRatings;
-}
-
-interface NineRatings {
+  holes: Holes;
   par: number;
   courseRating: number;
   slopeRating: number;
 }
-
-export type Holes = 9 | 18;
 
 /**
  * How many strokes this course gives you.
@@ -46,27 +41,16 @@ export type Holes = 9 | 18;
  *   Course Handicap = Index × (Slope ÷ 113) + (Course Rating − Par)
  *
  * The last term is what makes a course whose rating sits above its par give
- * strokes away before anybody has hit a ball. Over nine, the index is halved
- * and the nine-hole ratings are used.
+ * strokes away before anybody has hit a ball. Over nine the index is halved,
+ * because an index describes eighteen holes.
  *
  * Rounded to a whole number of strokes, which is what you actually receive.
  */
-export function courseHandicap(
-  index: number,
-  tee: TeeSet,
-  holes: Holes
-): number | null {
-  if (holes === 18) {
-    return Math.round(
-      index * (tee.slopeRating / NEUTRAL_SLOPE) + (tee.courseRating - tee.par)
-    );
-  }
-
-  if (!tee.nine) return null;
+export function courseHandicap(index: number, tee: TeeSet): number {
+  const forHoles = tee.holes === 9 ? index / 2 : index;
 
   return Math.round(
-    (index / 2) * (tee.nine.slopeRating / NEUTRAL_SLOPE) +
-      (tee.nine.courseRating - tee.nine.par)
+    forHoles * (tee.slopeRating / NEUTRAL_SLOPE) + (tee.courseRating - tee.par)
   );
 }
 
@@ -105,22 +89,12 @@ function toTenth(value: number): number {
 export function scoreDifferential(
   grossScore: number,
   tee: TeeSet,
-  holes: Holes,
   index: number
-): number | null {
-  if (holes === 18) {
-    return toTenth(
-      ((grossScore - tee.courseRating) * NEUTRAL_SLOPE) / tee.slopeRating
-    );
-  }
-
-  if (!tee.nine) return null;
-
+): number {
   const played =
-    ((grossScore - tee.nine.courseRating) * NEUTRAL_SLOPE) /
-    tee.nine.slopeRating;
+    ((grossScore - tee.courseRating) * NEUTRAL_SLOPE) / tee.slopeRating;
 
-  return toTenth(played + expectedNineDifferential(index));
+  return toTenth(tee.holes === 9 ? played + expectedNineDifferential(index) : played);
 }
 
 /**
@@ -132,26 +106,14 @@ export function scoreDifferential(
 export function scoreFor(
   differential: number,
   tee: TeeSet,
-  holes: Holes,
   index: number
-): number | null {
-  if (holes === 18) {
-    return Math.round(
-      tee.courseRating + (differential * tee.slopeRating) / NEUTRAL_SLOPE
-    );
-  }
+): number {
+  const played =
+    tee.holes === 9 ? differential - expectedNineDifferential(index) : differential;
 
-  if (!tee.nine) return null;
-
-  const played = differential - expectedNineDifferential(index);
   return Math.round(
-    tee.nine.courseRating + (played * tee.nine.slopeRating) / NEUTRAL_SLOPE
+    tee.courseRating + (played * tee.slopeRating) / NEUTRAL_SLOPE
   );
-}
-
-/** The par of whichever card is being played. */
-export function parFor(tee: TeeSet, holes: Holes): number | null {
-  return holes === 18 ? tee.par : (tee.nine?.par ?? null);
 }
 
 export interface BandRow {
@@ -177,22 +139,17 @@ export interface BandRow {
 export function scoreBand(
   index: number,
   tee: TeeSet,
-  holes: Holes,
   spread: number
 ): BandRow[] {
-  const handicap = courseHandicap(index, tee, holes);
-  const par = parFor(tee, holes);
-  if (handicap === null || par === null) return [];
-
-  const centre = par + handicap;
+  const centre = tee.par + courseHandicap(index, tee);
 
   return Array.from({ length: spread * 2 + 1 }, (_, i) => {
     const score = centre - spread + i;
-    const differential = scoreDifferential(score, tee, holes, index) ?? 0;
+    const differential = scoreDifferential(score, tee, index);
 
     return {
       score,
-      toPar: score - par,
+      toPar: score - tee.par,
       differential,
       against: toTenth(differential - index),
       expected: score === centre,

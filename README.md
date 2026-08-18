@@ -51,6 +51,11 @@ The World Handicap System, as it stands after the 2024 revision:
     Course Handicap  = Index × (Slope ÷ 113) + (Course Rating − Par)
     Differential     = (Score − Course Rating) × 113 ÷ Slope
 
+A course is rated over nine holes separately from eighteen, so a nine is added
+as its own set of tees with its own three numbers rather than as half of an
+eighteen. Playing nine is picking that card, and a course with nine holes and
+nothing else is described the same way as any other.
+
 A nine-hole score is made up to eighteen by adding the differential a player of
 your index is expected to return over the nine you didn't play. The governing
 bodies don't publish that expected value; the figure used here matches the one

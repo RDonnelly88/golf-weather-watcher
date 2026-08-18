@@ -44,6 +44,13 @@ differential behind a nine-hole score: the governing bodies don't publish it,
 so the value in `lib/handicap.ts` is pinned to the one worked example they do,
 and the test says so. If that formula is ever changed, change the test with it.
 
+**A set of tees is one card of one length.** A `TeeSet` carries `holes`, and a
+nine is its own entry rather than three extra numbers on an eighteen. That is
+what lets a nine-hole course be described without inventing an eighteen for it,
+and it is why nothing takes a hole count alongside a tee — the tee already
+knows. Data saved before this is migrated on read in `useHandicap`; don't drop
+that until nobody's browser could still be holding it.
+
 **Never fabricate weather.** If the model has no answer for a date, say so.
 Standing in demo readings when the API returns nothing produces a page that
 reads exactly like a real forecast, and there is no way for the reader to tell.

@@ -4,14 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { HANDICAP, courseKey, type Course } from "@/lib/config";
-import {
-  courseHandicap,
-  formatHandicap,
-  parFor,
-  scoreBand,
-  type Holes,
-  type TeeSet,
-} from "@/lib/handicap";
+import { courseHandicap, formatHandicap, scoreBand, type TeeSet } from "@/lib/handicap";
 import type { useHandicap } from "@/hooks/useHandicap";
 import ScoreBand from "@/components/handicap/ScoreBand";
 import TeeSetForm from "@/components/handicap/TeeSetForm";
@@ -25,10 +18,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  SegmentedControl,
-  SegmentedControlItem,
-} from "@/components/ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -47,6 +36,10 @@ import {
  * Everything it needs is typed in and kept in this browser: an index, and the
  * ratings off the card for the tees you play. No service publishes course
  * ratings, so there is nothing to look them up from and nothing is guessed.
+ *
+ * Playing nine instead of eighteen is picking the other set of tees. Each set
+ * carries its own length, so there is no switch to offer on a card that only
+ * rates one of them.
  */
 export default function HandicapCard({
   course,
@@ -60,29 +53,23 @@ export default function HandicapCard({
   const titleId = useId();
   const indexId = useId();
 
-  const [holes, setHoles] = useState<Holes>(18);
   const [editing, setEditing] = useState<TeeSet | null>(null);
   const [adding, setAdding] = useState(false);
 
   const chosenId = handicap.chosenFor(key);
   const tee = tees.find((candidate) => candidate.id === chosenId) ?? tees[0] ?? null;
 
-  // A card with no nine-hole ratings on it cannot answer for nine holes, so
-  // the choice is taken away rather than offered and then refused.
-  const ratesNine = tee?.nine !== undefined;
-  const playing: Holes = ratesNine ? holes : 18;
-
   const strokes =
     handicap.index === null || tee === null
       ? null
-      : courseHandicap(handicap.index, tee, playing);
+      : courseHandicap(handicap.index, tee);
 
   const band = useMemo(
     () =>
       handicap.index === null || tee === null
         ? []
-        : scoreBand(handicap.index, tee, playing, HANDICAP.bandSpread),
-    [handicap.index, tee, playing]
+        : scoreBand(handicap.index, tee, HANDICAP.bandSpread),
+    [handicap.index, tee]
   );
 
   return (
@@ -120,8 +107,8 @@ export default function HandicapCard({
               />
             </div>
 
-            {tees.length > 0 && tee && (
-              <div className="w-40 space-y-1.5">
+            {tee && (
+              <div className="w-52 space-y-1.5">
                 <Label htmlFor={`${titleId}-tees`}>Tees</Label>
                 <Select
                   value={tee.id}
@@ -133,27 +120,12 @@ export default function HandicapCard({
                   <SelectContent>
                     {tees.map((candidate) => (
                       <SelectItem key={candidate.id} value={candidate.id}>
-                        {candidate.name}
+                        {candidate.name}, {candidate.holes} holes
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            )}
-
-            {ratesNine && (
-              <SegmentedControl
-                label="Holes"
-                value={String(playing)}
-                onValueChange={(next) => setHoles(Number(next) as Holes)}
-              >
-                <SegmentedControlItem value="18" className="h-8 px-3 text-xs">
-                  18 holes
-                </SegmentedControlItem>
-                <SegmentedControlItem value="9" className="h-8 px-3 text-xs">
-                  9 holes
-                </SegmentedControlItem>
-              </SegmentedControl>
             )}
 
             <div className="ml-auto flex gap-1">
@@ -177,7 +149,9 @@ export default function HandicapCard({
                   onClick={() => handicap.removeTee(key, tee.id)}
                 >
                   <Trash2 aria-hidden />
-                  <span className="sr-only">Remove {tee.name} tees</span>
+                  <span className="sr-only">
+                    Remove {tee.name}, {tee.holes} holes
+                  </span>
                 </Button>
               )}
               <Button
@@ -213,7 +187,8 @@ export default function HandicapCard({
             <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
               Add the tees you play at {course.name} — par, course rating and
               slope, off the card. Nobody publishes them, so they can't be
-              looked up.
+              looked up. Add the nine as its own set if you play one; a card
+              rates it in its own right.
             </p>
           )}
 
@@ -231,10 +206,10 @@ export default function HandicapCard({
                 <span className="tabular font-semibold text-accent">
                   {formatHandicap(strokes, 0)}
                 </span>{" "}
-                {Math.abs(strokes) === 1 ? "shot" : "shots"} over {playing}{" "}
+                {Math.abs(strokes) === 1 ? "shot" : "shots"} over {tee.holes}{" "}
                 holes, so playing to your handicap is{" "}
                 <span className="tabular font-semibold">
-                  {(parFor(tee, playing) ?? 0) + strokes}
+                  {tee.par + strokes}
                 </span>
                 .
               </p>
@@ -242,7 +217,7 @@ export default function HandicapCard({
               <ScoreBand rows={band} />
 
               <p className="pretty text-xs text-muted-foreground">
-                {playing === 9 &&
+                {tee.holes === 9 &&
                   "A nine is made up to eighteen holes with the differential a player of your index is expected to return over the nine you didn't play. "}
                 Scores here are gross, before the net double bogey cap a real
                 card applies, and the Playing Conditions Calculation is taken as
