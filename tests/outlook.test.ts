@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { OUTLOOK_HOURS } from "@/lib/config";
-import type { HourlyReading, WeekForecast } from "@/lib/forecast";
-import { bestHour, courseTime, scoreOutlook } from "@/lib/outlook";
+import type { HourlyReading, OutlookForecast } from "@/lib/forecast";
+import { bestHour, chosenWindow, courseTime, scoreOutlook } from "@/lib/outlook";
 import { heatBand, toneFor } from "@/lib/scoring";
 import { dominantSky } from "@/lib/weather-codes";
 
@@ -28,10 +28,10 @@ function hour(time: string, overrides: Partial<HourlyReading> = {}): HourlyReadi
 }
 
 /** Whole days of hourly weather, with the sun up from six until nine. */
-function week(
+function forecastFor(
   dates: string[],
   overrides: (date: string, at: number) => Partial<HourlyReading> = () => ({})
-): WeekForecast {
+): OutlookForecast {
   return {
     utcOffsetSeconds: 3600,
     days: dates.map((date) => ({
@@ -66,7 +66,7 @@ describe("the clock at the course", () => {
 });
 
 describe("the grid", () => {
-  const days = scoreOutlook(week(["2026-06-01", "2026-06-02"]), EARLY);
+  const days = scoreOutlook(forecastFor(["2026-06-01", "2026-06-02"]), EARLY);
 
   it("gives every day the same run of hours", () => {
     expect(days).toHaveLength(2);
@@ -83,7 +83,7 @@ describe("the grid", () => {
 
   it("scores a foul hour below a fair one on the same day", () => {
     const foul = scoreOutlook(
-      week(["2026-06-01"], (_, at) =>
+      forecastFor(["2026-06-01"], (_, at) =>
         at === 15
           ? { rainfall: 3, rainChance: 95, windSpeed: 25, temperature: 5, cloudCover: 100 }
           : {}
@@ -97,8 +97,8 @@ describe("the grid", () => {
   });
 
   it("leaves an hour the forecast doesn't reach unscored", () => {
-    const forecast = week(["2026-06-01"]);
-    const short: WeekForecast = {
+    const forecast = forecastFor(["2026-06-01"]);
+    const short: OutlookForecast = {
       ...forecast,
       hours: forecast.hours.filter(
         (reading) => Number(reading.time.slice(11, 13)) < 18
@@ -115,21 +115,21 @@ describe("the grid", () => {
   it("marks an hour that has been and gone, by the course's clock", () => {
     // 13:30 UTC is 14:30 at a course an hour ahead: two o'clock has gone and
     // three has not.
-    const day = scoreOutlook(week(["2026-06-01"]), new Date("2026-06-01T13:30:00Z"))[0];
+    const day = scoreOutlook(forecastFor(["2026-06-01"]), new Date("2026-06-01T13:30:00Z"))[0];
 
     expect(day.cells.find((cell) => cell.hour === 14)?.past).toBe(true);
     expect(day.cells.find((cell) => cell.hour === 15)?.past).toBe(false);
   });
 
   it("still scores an hour that has gone, so the shape of the day survives", () => {
-    const day = scoreOutlook(week(["2026-06-01"]), new Date("2026-06-01T13:30:00Z"))[0];
+    const day = scoreOutlook(forecastFor(["2026-06-01"]), new Date("2026-06-01T13:30:00Z"))[0];
     expect(day.cells.find((cell) => cell.hour === 8)?.score).not.toBeNull();
   });
 });
 
 describe("darkness", () => {
   // Sun up from 06:00 to 21:00, so 22:00 is outside it and 20:00 is not.
-  const day = scoreOutlook(week(["2026-06-01"]), EARLY)[0];
+  const day = scoreOutlook(forecastFor(["2026-06-01"]), EARLY)[0];
 
   it("marks an hour outside the daylight", () => {
     expect(day.cells.find((cell) => cell.hour === 22)?.dark).toBe(true);
@@ -137,8 +137,8 @@ describe("darkness", () => {
   });
 
   it("marks the hour before sunrise on a short winter day", () => {
-    const winter: WeekForecast = {
-      ...week(["2026-12-01"]),
+    const winter: OutlookForecast = {
+      ...forecastFor(["2026-12-01"]),
       days: [{ date: "2026-12-01", sunrise: "2026-12-01T08:44", sunset: "2026-12-01T15:38" }],
     };
 
@@ -149,9 +149,9 @@ describe("darkness", () => {
   });
 });
 
-describe("the pick of the week", () => {
+describe("the pick of it", () => {
   it("finds the highest-scoring hour anywhere in it", () => {
-    const forecast = week(["2026-06-01", "2026-06-02"], (date, at) =>
+    const forecast = forecastFor(["2026-06-01", "2026-06-02"], (date, at) =>
       date === "2026-06-02" && at === 14 ? {} : { cloudCover: 95 }
     );
 
@@ -159,15 +159,15 @@ describe("the pick of the week", () => {
   });
 
   it("won't offer an hour that has already gone", () => {
-    // The best weather of the week was this morning.
-    const forecast = week(["2026-06-01"], (_, at) => (at === 8 ? {} : { cloudCover: 95 }));
+    // The best weather of the run was this morning.
+    const forecast = forecastFor(["2026-06-01"], (_, at) => (at === 8 ? {} : { cloudCover: 95 }));
     const best = bestHour(scoreOutlook(forecast, new Date("2026-06-01T13:30:00Z")));
 
     expect(best?.past).toBe(false);
     expect(best?.hour).not.toBe(8);
   });
 
-  it("has nothing to say about a week with no hours in it", () => {
+  it("has nothing to say about an outlook with no hours in it", () => {
     expect(bestHour([])).toBeNull();
   });
 });
@@ -200,5 +200,37 @@ describe("the sky over a run of hours", () => {
 
   it("falls back when there is nothing to go on", () => {
     expect(dominantSky([])).toBe("cloudy");
+  });
+});
+
+describe("where the chosen round falls", () => {
+  const round = { date: "2026-06-01", startHour: 13, length: 4 };
+
+  it("covers the hours it is played in", () => {
+    expect(chosenWindow(round, "2026-06-01")).toEqual({ firstHour: 13, lastHour: 16 });
+  });
+
+  it("has nothing to say about another day", () => {
+    expect(chosenWindow(round, "2026-06-02")).toBeNull();
+  });
+
+  it("clips a round that runs past the last hour drawn", () => {
+    // Teeing off at nine at night, back at one in the morning.
+    expect(chosenWindow({ ...round, startHour: 21, length: 4 }, "2026-06-01")).toEqual({
+      firstHour: 21,
+      lastHour: 22,
+    });
+  });
+
+  it("clips a round that starts before the first hour drawn", () => {
+    expect(chosenWindow({ ...round, startHour: 4, length: 4 }, "2026-06-01")).toEqual({
+      firstHour: 6,
+      lastHour: 7,
+    });
+  });
+
+  it("has nothing to say about a round that misses the drawn hours entirely", () => {
+    expect(chosenWindow({ ...round, startHour: 1, length: 2 }, "2026-06-01")).toBeNull();
+    expect(chosenWindow({ ...round, startHour: 23, length: 2 }, "2026-06-01")).toBeNull();
   });
 });

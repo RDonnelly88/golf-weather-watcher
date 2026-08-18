@@ -72,7 +72,7 @@ interface DayLight {
  * question of twenty-one windows across seven days, and twenty-one calls for
  * one location's week is a lot of asking for data that arrives together.
  */
-export interface WeekForecast {
+export interface OutlookForecast {
   days: DayLight[];
   hours: HourlyReading[];
   /**

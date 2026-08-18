@@ -14,7 +14,7 @@ import RoundHeading from "@/components/RoundHeading";
 import OverallScore from "@/components/score/OverallScore";
 import FactorCard from "@/components/score/FactorCard";
 import RoundTimeline from "@/components/timeline/RoundTimeline";
-import WeekOutlook from "@/components/outlook/WeekOutlook";
+import OutlookGrid from "@/components/outlook/OutlookGrid";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -116,9 +116,14 @@ export default function Page() {
         {outlook.isPending && !outlook.error && <div className="sheen h-80 rounded-lg" />}
 
         {outlook.data && (
-          <WeekOutlook
+          <OutlookGrid
             forecast={outlook.data}
             course={settings.course}
+            round={{
+              date: settings.date,
+              startHour: startHourOf(settings),
+              length: settings.length,
+            }}
             onChoose={(choice) => {
               update(choice);
               // The form is at the top of the page and the outlook is at the

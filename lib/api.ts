@@ -1,4 +1,4 @@
-import type { RoundForecast, RoundRequest, WeekForecast } from "@/lib/forecast";
+import type { RoundForecast, RoundRequest, OutlookForecast } from "@/lib/forecast";
 import type { Place } from "@/lib/places";
 
 /**
@@ -43,14 +43,14 @@ export function fetchPlaces(query: string, signal?: AbortSignal): Promise<Place[
   return getJson<Place[]>(`/api/places?q=${encodeURIComponent(query)}`, signal);
 }
 
-export function fetchWeek(
+export function fetchOutlook(
   course: { latitude: number; longitude: number },
   signal?: AbortSignal
-): Promise<WeekForecast> {
+): Promise<OutlookForecast> {
   const params = new URLSearchParams({
     latitude: String(course.latitude),
     longitude: String(course.longitude),
   });
 
-  return getJson<WeekForecast>(`/api/outlook?${params}`, signal);
+  return getJson<OutlookForecast>(`/api/outlook?${params}`, signal);
 }

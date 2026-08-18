@@ -25,11 +25,19 @@ import { SkyIcon } from "@/components/timeline/SkyIcon";
  */
 export default function HeatCell({
   cell,
+  column,
+  row,
+  chosen,
   selected,
   onShow,
   onPin,
 }: {
   cell: HourCell;
+  /** Placed rather than flowed, so the chosen round can be drawn over it. */
+  column: number;
+  row: number;
+  /** Inside the round the form is set to. Outlined, and said out loud. */
+  chosen: boolean;
   selected: boolean;
   /** Hover or focus: fill the strip without committing to anything. */
   onShow: () => void;
@@ -38,10 +46,12 @@ export default function HeatCell({
 }) {
   const clock = `${String(cell.hour).padStart(2, "0")}:00`;
   const when = `${clock} on ${format(parseISO(cell.time.slice(0, 10)), "EEEE d MMMM")}`;
+  const at = { gridColumn: column, gridRow: row };
 
   if (cell.score === null || cell.reading === null) {
     return (
       <div
+        style={at}
         className="h-9 rounded border border-dashed border-border"
         title={`No forecast for ${when}`}
       />
@@ -51,6 +61,7 @@ export default function HeatCell({
   if (cell.dark) {
     return (
       <div
+        style={at}
         className="flex h-9 items-center justify-center rounded border border-border bg-surface-2/60"
         title={`Dark at ${when}`}
       >
@@ -63,6 +74,7 @@ export default function HeatCell({
   return (
     <button
       type="button"
+      style={at}
       onMouseEnter={onShow}
       onFocus={onShow}
       onClick={onPin}
@@ -73,8 +85,10 @@ export default function HeatCell({
         // Already been and gone: still worth seeing the shape of, not worth
         // considering.
         cell.past && "opacity-35",
+        // Neutral, not accent: accent means the round you have set, and two
+        // green outlines a row apart is two things looking like one.
         selected
-          ? "outline outline-2 outline-offset-1 outline-ring"
+          ? "z-10 outline outline-2 outline-offset-1 outline-foreground/60"
           : "hover:brightness-110"
       )}
     >
@@ -82,6 +96,8 @@ export default function HeatCell({
       <span className="sr-only">
         {cell.score.overall} out of 100, {when}, {cell.sky?.label}
         {cell.past && ", already gone"}
+        {/* The outline is no use to a reader who can't see it. */}
+        {chosen && ", your round"}
       </span>
     </button>
   );

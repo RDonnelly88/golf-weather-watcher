@@ -70,7 +70,7 @@ export const FORECAST = {
 } as const;
 
 /**
- * The week ahead, hour by hour.
+ * The fortnight ahead, hour by hour.
  *
  * Every hour anybody would tee off in, which in the far north of the range is
  * more hours than there is daylight for — the ones outside it are drawn as
@@ -78,7 +78,7 @@ export const FORECAST = {
  * what the grid is for.
  */
 export const OUTLOOK = {
-  days: 7,
+  days: 14,
   firstHour: 6,
   lastHour: 22,
 } as const;
