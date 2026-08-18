@@ -174,6 +174,42 @@ export async function saveCourses(page: Page, courses: { name: string; latitude:
 }
 
 /**
+ * Seeds a handicap and a set of tees at the default course, as if they had
+ * been typed in once off the card.
+ */
+export async function saveHandicap(page: Page) {
+  await page.addInitScript(() => {
+    const key = "St Andrews, Scotland@56.3398,-2.7967";
+    localStorage.setItem(
+      "golf-weather-watcher-handicap",
+      JSON.stringify({
+        index: 12.4,
+        tees: {
+          [key]: [
+            {
+              id: "white",
+              name: "White",
+              par: 72,
+              courseRating: 72.6,
+              slopeRating: 132,
+              nine: { par: 36, courseRating: 36.2, slopeRating: 129 },
+            },
+            {
+              id: "yellow",
+              name: "Yellow",
+              par: 72,
+              courseRating: 70.9,
+              slopeRating: 125,
+            },
+          ],
+        },
+        chosen: { [key]: "white" },
+      })
+    );
+  });
+}
+
+/**
  * Serves a round that cannot be scored, over a fortnight that can.
  *
  * The date being out of range is a failure of the round and not of the

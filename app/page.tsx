@@ -9,6 +9,7 @@ import { scoreRound } from "@/lib/scoring";
 import { startHourOf, useForecast } from "@/hooks/useForecast";
 import { useOutlook } from "@/hooks/useOutlook";
 import { useFavouriteCourses } from "@/hooks/useFavouriteCourses";
+import { useHandicap } from "@/hooks/useHandicap";
 import { useRoundSettings } from "@/hooks/useRoundSettings";
 import RoundForm from "@/components/round/RoundForm";
 import RoundHeading from "@/components/RoundHeading";
@@ -16,6 +17,7 @@ import OverallScore from "@/components/score/OverallScore";
 import FactorCard from "@/components/score/FactorCard";
 import RoundTimeline from "@/components/timeline/RoundTimeline";
 import OutlookGrid from "@/components/outlook/OutlookGrid";
+import HandicapCard from "@/components/handicap/HandicapCard";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -55,6 +57,7 @@ export default function Page() {
 
   const { settings, ready, update } = useRoundSettings();
   const favourites = useFavouriteCourses();
+  const handicap = useHandicap();
   const { data: forecast, isPending, error } = useForecast(settings, ready);
   const outlook = useOutlook(settings.course, ready);
 
@@ -175,6 +178,12 @@ export default function Page() {
               window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" });
             }}
           />
+        )}
+
+        {/* Independent of the weather: it needs a course and your own numbers,
+            neither of which waits on a forecast. */}
+        {handicap.ready && (
+          <HandicapCard course={settings.course} handicap={handicap} />
         )}
       </section>
     </main>

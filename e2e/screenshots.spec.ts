@@ -7,6 +7,7 @@ import {
   RECORDED,
   freezeClock,
   saveCourses,
+  saveHandicap,
   serveFailure,
   serveWeather,
 } from "./fixtures";
@@ -150,6 +151,48 @@ for (const theme of ["light", "dark"] as const) {
     await page.getByRole("heading", { name: "The fortnight ahead" }).scrollIntoViewIfNeeded();
     await week.getByRole("button", { name: /14:00 on Tuesday 29 September/ }).click();
     await shot(page, info.project.name, `09-outlook-open-${theme}`);
+  });
+
+  test(`what you'd need to shoot — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await saveHandicap(page);
+    await page.goto("/");
+    await settled(page);
+    await page.getByRole("heading", { name: "What you'd need to shoot" }).scrollIntoViewIfNeeded();
+    await shot(page, info.project.name, `10-handicap-${theme}`);
+  });
+
+  test(`what you'd need over nine — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await saveHandicap(page);
+    await page.goto("/");
+    await settled(page);
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    await page.getByRole("heading", { name: "What you'd need to shoot" }).scrollIntoViewIfNeeded();
+    await card.getByRole("radio", { name: "9 holes" }).click();
+    await shot(page, info.project.name, `10b-handicap-nine-${theme}`);
+  });
+
+  test(`the tees off the card — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await saveHandicap(page);
+    await page.goto("/");
+    await settled(page);
+    await page.getByRole("heading", { name: "What you'd need to shoot" }).scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await shot(page, info.project.name, `10c-handicap-tees-${theme}`);
+  });
+
+  test(`no handicap yet — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await page.goto("/");
+    await settled(page);
+    await page.getByRole("heading", { name: "What you'd need to shoot" }).scrollIntoViewIfNeeded();
+    await shot(page, info.project.name, `11-handicap-empty-${theme}`);
   });
 
   test(`nothing to score — ${theme}`, async ({ page }, info) => {

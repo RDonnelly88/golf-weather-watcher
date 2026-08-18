@@ -37,6 +37,13 @@ copy of a band table so a card can explain itself, is how the explanation comes
 to describe a number the app no longer produces. The factors carry their own
 band tables out with them for exactly this reason.
 
+**Never invent a course rating.** They are typed in off the card because
+nothing publishes them, and a plausible default is indistinguishable from a
+real one to everybody who reads it afterwards. The same goes for the expected
+differential behind a nine-hole score: the governing bodies don't publish it,
+so the value in `lib/handicap.ts` is pinned to the one worked example they do,
+and the test says so. If that formula is ever changed, change the test with it.
+
 **Never fabricate weather.** If the model has no answer for a date, say so.
 Standing in demo readings when the API returns nothing produces a page that
 reads exactly like a real forecast, and there is no way for the reader to tell.
@@ -112,6 +119,7 @@ exit.
 | `lib/open-meteo.ts` | The weather, from whichever of the two models holds the day |
 | `lib/places.ts` | Course search |
 | `lib/comfort.ts` | The readings that don't score but change what you pack |
+| `lib/handicap.ts` | The World Handicap System's arithmetic, pure and tested |
 | `lib/weather-codes.ts` | WMO codes to a label and a picture |
 | `tests/` | Unit tests over the pure logic in `lib/` |
 | `e2e/` | Playwright; `screenshots.spec.ts` is the visual record |
