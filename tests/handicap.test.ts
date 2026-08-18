@@ -7,6 +7,7 @@ import {
   expectedNineDifferential,
   scoreBand,
   scoreDifferential,
+  differentialParts,
   scoreFor,
   teeFaults,
   type TeeSet,
@@ -136,6 +137,39 @@ describe("score differential", () => {
   it("carries one decimal place and no more", () => {
     const value = scoreDifferential(83, WHITES, 12);
     expect(value * 10).toBe(Math.round(value * 10));
+  });
+});
+
+describe("the two halves of a nine-hole differential", () => {
+  it("splits a nine into the half walked and the half assumed", () => {
+    const parts = differentialParts(43, WHITES_NINE, 12);
+    expect(parts.played).toBeCloseTo(6.39, 2);
+    expect(parts.expected).toBeCloseTo(7.41, 2);
+    expect(parts.played + parts.expected).toBeCloseTo(parts.total, 1);
+  });
+
+  it("assumes nothing over eighteen", () => {
+    expect(differentialParts(85, WHITES, 12).expected).toBe(0);
+  });
+
+  it("rounds once at the end, as the system does", () => {
+    // Rounding the halves first and adding them moves a quarter of all
+    // nine-hole differentials by a tenth, so the halves come out raw.
+    for (const score of [40, 41, 42, 43, 44, 45, 46, 47, 48]) {
+      for (const index of [0, 6.3, 12, 20, 28.7, 36]) {
+        expect(differentialParts(score, WHITES_NINE, index).total).toBe(
+          scoreDifferential(score, WHITES_NINE, index)
+        );
+      }
+    }
+  });
+
+  it("goes below the assumed half when the nine is good enough", () => {
+    // The half you walked turns negative once you beat the course rating, so
+    // the assumption is not a floor under the differential.
+    const parts = differentialParts(27, WHITES_NINE, 20);
+    expect(parts.played).toBeLessThan(0);
+    expect(parts.total).toBeLessThan(parts.expected);
   });
 });
 

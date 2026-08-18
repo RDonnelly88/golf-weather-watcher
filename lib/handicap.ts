@@ -12,7 +12,7 @@
  */
 
 /** The neutral slope. A course of average difficulty rates 113. */
-const NEUTRAL_SLOPE = 113;
+export const NEUTRAL_SLOPE = 113;
 
 export type Holes = 9 | 18;
 
@@ -91,10 +91,40 @@ export function scoreDifferential(
   tee: TeeSet,
   index: number
 ): number {
-  const played =
-    ((grossScore - tee.courseRating) * NEUTRAL_SLOPE) / tee.slopeRating;
+  return differentialParts(grossScore, tee, index).total;
+}
 
-  return toTenth(tee.holes === 9 ? played + expectedNineDifferential(index) : played);
+/** A differential and the two halves it was made of. */
+export interface DifferentialParts {
+  /** The holes actually walked, with the course taken out of them. */
+  played: number;
+  /** The nine that wasn't, expected from the index alone. Nought over eighteen. */
+  expected: number;
+  /** The differential itself, carried to one decimal place. */
+  total: number;
+}
+
+/**
+ * The same arithmetic as above, kept apart.
+ *
+ * A card that explains where a nine-hole differential came from has to show
+ * the two halves, and the only safe way to show them is to be handed them —
+ * a component that works out the split itself is a second copy of this waiting
+ * to disagree with the first.
+ *
+ * The halves come out unrounded, because the system rounds once at the end and
+ * rounding them first moves a quarter of all nine-hole differentials by a
+ * tenth. Anything showing them has to show enough decimals to add up.
+ */
+export function differentialParts(
+  grossScore: number,
+  tee: TeeSet,
+  index: number
+): DifferentialParts {
+  const played = ((grossScore - tee.courseRating) * NEUTRAL_SLOPE) / tee.slopeRating;
+  const expected = tee.holes === 9 ? expectedNineDifferential(index) : 0;
+
+  return { played, expected, total: toTenth(played + expected) };
 }
 
 /**

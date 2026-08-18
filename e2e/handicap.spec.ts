@@ -77,6 +77,31 @@ test.describe("what you'd need to shoot", () => {
     );
   });
 
+  test("shows its working, in the reader's own numbers", async ({ page }) => {
+    await freezeClock(page);
+    await serveWeather(page);
+    await saveHandicap(page);
+    await page.goto("/");
+
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    await card.getByRole("button", { name: "How this is worked out" }).click();
+
+    // The eighteen: 12.4 × (132 ÷ 113) + (72.6 − 72), and no assumed half.
+    await expect(card).toContainText("12.4 × (132 ÷ 113) + (72.6 − 72)");
+    await expect(card).not.toContainText("the nine you didn't play");
+
+    await card.getByLabel("Tees").click();
+    await page.getByRole("option", { name: "White, 9 holes" }).click();
+
+    // The nine halves the index, and names the half it assumes. An index of
+    // 12.4 expects (12.4 × 73 + 162) ÷ 140 = 7.62 over the nine not played.
+    await expect(card).toContainText("(12.4 ÷ 2) × (129 ÷ 113) + (36.2 − 36)");
+    await expect(card).toContainText("the nine you didn't play");
+    await expect(card).toContainText("7.62");
+    // The halves have to add up to the differential the band reports.
+    await expect(card).toContainText("13.58, carried to one decimal place");
+  });
+
   test("starts a new set of tees blank, whatever was being edited", async ({
     page,
   }) => {

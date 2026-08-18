@@ -90,6 +90,14 @@ course.** A morning in Auckland is not over because it is evening in Fife. The
 outlook carries the course's UTC offset for exactly this, and `courseTime()`
 is the only thing that should answer it.
 
+**An explanation is handed its numbers, never left to work them out.**
+`Working` shows where a differential came from, and every figure in it comes
+out of `lib/handicap.ts` — `differentialParts` exists so that the two halves of
+a nine can be shown without a component deriving them. The halves come out
+unrounded because the system rounds once at the end; rounding them first moves
+a quarter of all nine-hole differentials by a tenth, so anything displaying
+them shows enough decimals to add up.
+
 **Colour is never the only carrier of a score.** The heatmap paints an hour and
 says nothing in the cell, so the accessible name spells the number out. Any new
 thing drawn on the `--score-*` ramp owes the same.

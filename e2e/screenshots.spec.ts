@@ -176,6 +176,21 @@ for (const theme of ["light", "dark"] as const) {
     await shot(page, info.project.name, `10b-handicap-nine-${theme}`);
   });
 
+  test(`the working, over nine — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await saveHandicap(page);
+    await page.goto("/");
+    await settled(page);
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    await page.getByRole("heading", { name: "What you'd need to shoot" }).scrollIntoViewIfNeeded();
+    await card.getByLabel("Tees").click();
+    await page.getByRole("option", { name: "White, 9 holes" }).click();
+    await card.getByRole("button", { name: "How this is worked out" }).click();
+    await settled(page);
+    await shot(page, info.project.name, `10e-handicap-working-${theme}`);
+  });
+
   test(`the tees off the card — ${theme}`, async ({ page }, info) => {
     await setTheme(page, theme);
     await serveWeather(page, FINE);

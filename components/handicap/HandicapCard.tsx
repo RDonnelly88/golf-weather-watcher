@@ -14,6 +14,7 @@ import {
 import type { useHandicap } from "@/hooks/useHandicap";
 import ScoreBand from "@/components/handicap/ScoreBand";
 import TeeSetForm from "@/components/handicap/TeeSetForm";
+import Working from "@/components/handicap/Working";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -234,9 +235,9 @@ export default function HandicapCard({
 
               <ScoreBand rows={band} />
 
+              <Working tee={tee} index={handicap.index ?? 0} />
+
               <p className="pretty text-xs text-muted-foreground">
-                {tee.holes === 9 &&
-                  "A nine is made up to eighteen holes with the differential a player of your index is expected to return over the nine you didn't play. "}
                 Scores here are gross, before the net double bogey cap a real
                 card applies, and the Playing Conditions Calculation is taken as
                 nought — it's worked out from the day's scores afterwards, and a

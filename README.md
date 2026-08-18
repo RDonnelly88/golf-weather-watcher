@@ -61,6 +61,10 @@ your index is expected to return over the nine you didn't play. The governing
 bodies don't publish that expected value; the figure used here matches the one
 worked example they do publish.
 
+The card shows this working with your own index and the ratings off your card
+substituted into it, including which half of a nine-hole differential you
+played and which half was assumed for you.
+
 Course ratings have to be typed in, once per set of tees, because no free
 service publishes them. Nothing is pre-filled — a rating invented for the sake
 of having one looks exactly like a real one.
