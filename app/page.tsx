@@ -6,6 +6,7 @@ import { TriangleAlert } from "lucide-react";
 import { summariseRound } from "@/lib/forecast";
 import { scoreRound } from "@/lib/scoring";
 import { startHourOf, useForecast } from "@/hooks/useForecast";
+import { useOutlook } from "@/hooks/useOutlook";
 import { useFavouriteCourses } from "@/hooks/useFavouriteCourses";
 import { useRoundSettings } from "@/hooks/useRoundSettings";
 import RoundForm from "@/components/round/RoundForm";
@@ -13,6 +14,7 @@ import RoundHeading from "@/components/RoundHeading";
 import OverallScore from "@/components/score/OverallScore";
 import FactorCard from "@/components/score/FactorCard";
 import RoundTimeline from "@/components/timeline/RoundTimeline";
+import WeekOutlook from "@/components/outlook/WeekOutlook";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -29,6 +31,7 @@ export default function Page() {
   const { settings, ready, update } = useRoundSettings();
   const favourites = useFavouriteCourses();
   const { data: forecast, isPending, error } = useForecast(settings, ready);
+  const outlook = useOutlook(settings.course, ready);
 
   const round = useMemo(
     () =>
@@ -108,6 +111,24 @@ export default function Page() {
 
             <RoundTimeline forecast={forecast} />
           </div>
+        )}
+
+        {outlook.isPending && !outlook.error && <div className="sheen h-80 rounded-lg" />}
+
+        {outlook.data && (
+          <WeekOutlook
+            forecast={outlook.data}
+            course={settings.course}
+            length={settings.length}
+            onChoose={(choice) => {
+              update(choice);
+              // The form is at the top of the page and the outlook is at the
+              // bottom of it, so choosing a window has to take you to what it
+              // changed or it looks as though nothing happened.
+              const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" });
+            }}
+          />
         )}
       </section>
     </main>

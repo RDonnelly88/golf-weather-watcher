@@ -69,6 +69,26 @@ export const FORECAST = {
   archiveFrom: "1940-01-01",
 } as const;
 
+/**
+ * The week ahead, at three times of day.
+ *
+ * Three slots rather than twenty-four hours because nobody books a round for
+ * 11:00 on Thursday off the back of a seven-day forecast — they decide which
+ * morning. Each one starts at the hour below and runs for whatever length the
+ * round is set to, so the outlook is scored on the round being planned rather
+ * than on a window of its own invention.
+ */
+export const OUTLOOK = {
+  days: 7,
+  slots: [
+    { key: "morning", label: "Morning", startHour: 8 },
+    { key: "afternoon", label: "Afternoon", startHour: 12 },
+    { key: "evening", label: "Evening", startHour: 16 },
+  ],
+} as const;
+
+export type SlotKey = (typeof OUTLOOK.slots)[number]["key"];
+
 export const SEARCH = {
   /** Nominatim asks for no more than one call a second; a pause beats a queue. */
   debounceMs: 500,

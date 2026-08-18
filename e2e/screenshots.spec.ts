@@ -1,7 +1,15 @@
 import fs from "node:fs";
 import { test, type Page } from "@playwright/test";
 
-import { FINE, FOUL, RECORDED, saveCourses, serveFailure, serveWeather } from "./fixtures";
+import {
+  FINE,
+  FOUL,
+  RECORDED,
+  freezeClock,
+  saveCourses,
+  serveFailure,
+  serveWeather,
+} from "./fixtures";
 
 /**
  * The visual record. Not assertions — a folder of screenshots to look at.
@@ -21,6 +29,7 @@ async function shot(page: Page, project: string, name: string) {
 
 /** Flip the theme the same way the toggle does, without needing it on screen. */
 async function setTheme(page: Page, theme: "light" | "dark") {
+  await freezeClock(page);
   await page.emulateMedia({ colorScheme: theme });
   await page.addInitScript((choice) => {
     localStorage.setItem("golf-weather-theme", choice);
@@ -103,6 +112,26 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto("/");
     await settled(page);
     await shot(page, info.project.name, `06-recorded-${theme}`);
+  });
+
+  test(`the week ahead — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await page.goto("/");
+    await settled(page);
+    await page.getByRole("heading", { name: "The week ahead" }).scrollIntoViewIfNeeded();
+    await shot(page, info.project.name, `08-outlook-${theme}`);
+  });
+
+  test(`a window in the week, opened — ${theme}`, async ({ page }, info) => {
+    await setTheme(page, theme);
+    await serveWeather(page, FINE);
+    await page.goto("/");
+    await settled(page);
+    const week = page.getByRole("region", { name: "The week ahead" });
+    await page.getByRole("heading", { name: "The week ahead" }).scrollIntoViewIfNeeded();
+    await week.getByRole("button").nth(1).click();
+    await shot(page, info.project.name, `09-outlook-open-${theme}`);
   });
 
   test(`nothing to score — ${theme}`, async ({ page }, info) => {
