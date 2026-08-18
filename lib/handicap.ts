@@ -116,6 +116,56 @@ export function scoreFor(
   );
 }
 
+/**
+ * What a card can plausibly say, so that a number from the wrong one is caught
+ * rather than believed.
+ *
+ * These are not the arithmetic — the formulae above will take any figures they
+ * are given and answer confidently. They are the sanity check the formulae
+ * can't do for themselves: a rating twenty strokes off its par produces a
+ * course handicap that looks like a typing mistake and reads like a fact.
+ */
+const PAR: Record<Holes, [number, number]> = {
+  9: [27, 40],
+  18: [54, 80],
+};
+
+/** The range the World Handicap System defines a slope over. */
+const SLOPE: [number, number] = [55, 155];
+
+/**
+ * How far a course rating can sit from par.
+ *
+ * It is the score a scratch player is expected to return, so it tracks par
+ * closely — a couple either way is normal and five is a hard course. Eight is
+ * loose enough not to refuse a real card and tight enough to catch an
+ * eighteen-hole rating typed against a nine.
+ */
+const MAX_DRIFT = 8;
+
+/** The field on the card that can't be right, if any of them can't. */
+export type TeeFault = "par" | "courseRating" | "slopeRating";
+
+function outside(value: number, [low, high]: [number, number]): boolean {
+  return !(value >= low && value <= high);
+}
+
+/** Which of a set of tees' numbers could not have come off the card. */
+export function teeFaults(tee: TeeSet): TeeFault[] {
+  const faults: TeeFault[] = [];
+
+  if (outside(tee.par, PAR[tee.holes])) faults.push("par");
+  if (outside(tee.slopeRating, SLOPE)) faults.push("slopeRating");
+  if (Math.abs(tee.courseRating - tee.par) > MAX_DRIFT) faults.push("courseRating");
+
+  return faults;
+}
+
+/** The bounds themselves, for a form that has to say what it will accept. */
+export function parRange(holes: Holes): [number, number] {
+  return PAR[holes];
+}
+
 export interface BandRow {
   /** Gross score, before the net double bogey cap that a real card would apply. */
   score: number;

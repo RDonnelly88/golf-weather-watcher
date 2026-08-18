@@ -77,6 +77,118 @@ test.describe("what you'd need to shoot", () => {
     );
   });
 
+  test("starts a new set of tees blank, whatever was being edited", async ({
+    page,
+  }) => {
+    await freezeClock(page);
+    await serveWeather(page);
+    await saveHandicap(page);
+    await page.goto("/");
+
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    await card.getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByLabel("Course rating", { exact: true })).toHaveValue("72.6");
+
+    // Left filled in, the eighteen's rating gets saved against the nine that is
+    // being added, and every figure below it is quietly wrong.
+    await card.getByRole("button", { name: "Tees", exact: true }).click();
+    await expect(page.getByLabel("Course rating", { exact: true })).toHaveValue("");
+    await expect(page.getByLabel("Par", { exact: true })).toHaveValue("");
+  });
+
+  test("refuses a rating that can't have come off the card", async ({ page }) => {
+    await freezeClock(page);
+    await serveWeather(page);
+    await saveHandicap(page);
+    await page.goto("/");
+
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    await card.getByRole("button", { name: "Tees", exact: true }).click();
+    await page.getByRole("radio", { name: "9 holes" }).click();
+    await page.getByRole("textbox", { name: "Tees" }).fill("Yellow F9");
+    await page.getByLabel("Par", { exact: true }).fill("36");
+    await page.getByLabel("Course rating", { exact: true }).fill("59.8");
+    await page.getByLabel("Slope rating", { exact: true }).fill("127");
+    await page.getByRole("button", { name: "Add these tees" }).click();
+
+    await expect(page.getByLabel("Course rating", { exact: true })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    );
+    // Nothing saved, so the card still answers for the tees it had.
+    await expect(card).toContainText("you get 15 shots over 18 holes");
+    await expect(card).not.toContainText("shots over 9 holes");
+  });
+
+  test("says so rather than answering for tees that were saved wrong", async ({
+    page,
+  }) => {
+    await freezeClock(page);
+    await serveWeather(page);
+    await page.addInitScript(() => {
+      const key = "St Andrews, Scotland@56.3398,-2.7967";
+      localStorage.setItem(
+        "golf-weather-watcher-handicap",
+        JSON.stringify({
+          index: 20,
+          tees: {
+            [key]: [
+              {
+                id: "bad",
+                name: "Yellow F9",
+                holes: 9,
+                par: 36,
+                courseRating: 59.8,
+                slopeRating: 127,
+              },
+            ],
+          },
+          chosen: { [key]: "bad" },
+        })
+      );
+    });
+    await page.goto("/");
+
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    await expect(card).toContainText("can't have come off one card");
+    await expect(card).not.toContainText("shots over 9 holes");
+    // The index it was saved with is still there to correct them against.
+    await expect(page.getByLabel("Handicap index")).toHaveValue("20.0");
+  });
+
+  test("keeps the rest when one set of tees is unreadable", async ({ page }) => {
+    await freezeClock(page);
+    await serveWeather(page);
+    await page.addInitScript(() => {
+      const key = "St Andrews, Scotland@56.3398,-2.7967";
+      localStorage.setItem(
+        "golf-weather-watcher-handicap",
+        JSON.stringify({
+          index: 12.4,
+          tees: {
+            [key]: [
+              { id: "junk", name: "White" },
+              {
+                id: "yellow",
+                name: "Yellow",
+                holes: 18,
+                par: 72,
+                courseRating: 70.9,
+                slopeRating: 125,
+              },
+            ],
+          },
+          chosen: { [key]: "yellow" },
+        })
+      );
+    });
+    await page.goto("/");
+
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    await expect(page.getByLabel("Handicap index")).toHaveValue("12.4");
+    await expect(card).toContainText("you get 13 shots over 18 holes");
+  });
+
   test("keeps tees saved when a nine hung off its eighteen", async ({ page }) => {
     await freezeClock(page);
     await serveWeather(page);

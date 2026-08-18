@@ -4,7 +4,13 @@ import { useId, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { HANDICAP, courseKey, type Course } from "@/lib/config";
-import { courseHandicap, formatHandicap, scoreBand, type TeeSet } from "@/lib/handicap";
+import {
+  courseHandicap,
+  formatHandicap,
+  scoreBand,
+  teeFaults,
+  type TeeSet,
+} from "@/lib/handicap";
 import type { useHandicap } from "@/hooks/useHandicap";
 import ScoreBand from "@/components/handicap/ScoreBand";
 import TeeSetForm from "@/components/handicap/TeeSetForm";
@@ -59,14 +65,17 @@ export default function HandicapCard({
   const chosenId = handicap.chosenFor(key);
   const tee = tees.find((candidate) => candidate.id === chosenId) ?? tees[0] ?? null;
 
+  // Numbers saved before they were checked, or off another card entirely. The
+  // arithmetic would answer for them without complaint, which is the problem.
+  const faults = tee === null ? [] : teeFaults(tee);
+  const usable = tee !== null && faults.length === 0;
+
   const strokes =
-    handicap.index === null || tee === null
-      ? null
-      : courseHandicap(handicap.index, tee);
+    handicap.index === null || !usable ? null : courseHandicap(handicap.index, tee);
 
   const band = useMemo(
     () =>
-      handicap.index === null || tee === null
+      handicap.index === null || tee === null || teeFaults(tee).length > 0
         ? []
         : scoreBand(handicap.index, tee, HANDICAP.bandSpread),
     [handicap.index, tee]
@@ -170,6 +179,7 @@ export default function HandicapCard({
 
           {(adding || editing) && (
             <TeeSetForm
+              key={editing?.id ?? "new"}
               tee={editing ?? undefined}
               onSave={(saved) => {
                 handicap.saveTee(key, saved);
@@ -192,7 +202,15 @@ export default function HandicapCard({
             </p>
           )}
 
-          {tee && handicap.index === null && (
+          {tee && faults.length > 0 && !editing && (
+            <p className="rounded-lg border border-dashed border-poor p-4 text-center text-sm text-muted-foreground">
+              The numbers saved against the {tee.name} tees can't have come off
+              one card — a course rating sits within a few strokes of par, and
+              this one doesn't. Edit them and check against the card.
+            </p>
+          )}
+
+          {tee && usable && handicap.index === null && (
             <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
               Put your handicap index in and this fills up.
             </p>

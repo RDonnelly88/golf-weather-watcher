@@ -8,6 +8,7 @@ import {
   scoreBand,
   scoreDifferential,
   scoreFor,
+  teeFaults,
   type TeeSet,
 } from "@/lib/handicap";
 
@@ -193,6 +194,55 @@ describe("the band", () => {
     // Par 36 plus a course handicap of 7.
     expect(nine.find((row) => row.expected)?.score).toBe(43);
     expect(nine.map((row) => row.toPar)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+});
+
+describe("numbers that can't have come off a card", () => {
+  it("passes a card that reads like a card", () => {
+    expect(teeFaults(WHITES)).toEqual([]);
+    expect(teeFaults(WHITES_NINE)).toEqual([]);
+    expect(teeFaults(YELLOWS)).toEqual([]);
+  });
+
+  it("catches an eighteen-hole rating typed against a nine", () => {
+    // The way it gets in: par retyped for the nine, the rating left behind.
+    expect(teeFaults({ ...WHITES_NINE, courseRating: 72.6 })).toEqual([
+      "courseRating",
+    ]);
+  });
+
+  it("catches a rating far enough from par to be another course", () => {
+    expect(teeFaults({ ...WHITES, courseRating: 59.8 })).toContain("courseRating");
+  });
+
+  it("allows a hard course to rate well above its par", () => {
+    expect(teeFaults({ ...WHITES, courseRating: 76.4 })).toEqual([]);
+  });
+
+  it("allows a course to rate below its par", () => {
+    expect(teeFaults({ ...WHITES, courseRating: 68.9 })).toEqual([]);
+  });
+
+  it("catches a par that is not a round of golf", () => {
+    expect(teeFaults({ ...WHITES, par: 36, courseRating: 36.2 })).toEqual(["par"]);
+    expect(teeFaults({ ...WHITES_NINE, par: 72, courseRating: 72.6 })).toEqual(["par"]);
+  });
+
+  it("takes a par three course over nine", () => {
+    expect(
+      teeFaults({ ...WHITES_NINE, par: 27, courseRating: 26.4, slopeRating: 82 })
+    ).toEqual([]);
+  });
+
+  it("catches a slope outside the range the system defines", () => {
+    expect(teeFaults({ ...WHITES, slopeRating: 200 })).toEqual(["slopeRating"]);
+    expect(teeFaults({ ...WHITES, slopeRating: 12 })).toEqual(["slopeRating"]);
+  });
+
+  it("names every field that is wrong, not just the first", () => {
+    expect(
+      teeFaults({ ...WHITES_NINE, par: 300, courseRating: 10, slopeRating: 300 })
+    ).toEqual(["par", "slopeRating", "courseRating"]);
   });
 });
 

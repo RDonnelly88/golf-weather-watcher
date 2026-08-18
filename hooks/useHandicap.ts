@@ -9,25 +9,22 @@ const STORAGE_KEY = "golf-weather-watcher-handicap";
 
 /**
  * Checked rather than trusted, the same as the round settings and the saved
- * courses. A slope of nought would divide the whole card by zero, and a rating
- * typed into the wrong box should be refused here rather than three components
- * later.
- *
- * The bounds depend on how many holes the card covers, which is why this is
- * two shapes rather than one with a range loose enough to admit both.
+ * courses. What is checked here is the shape: three numbers and a length,
+ * with a slope that can be divided by. Whether the numbers could have come off
+ * a real card is `teeFaults`, in the model, so that one place decides it.
  */
-function card(holes: Holes, min: number, max: number) {
+function card(holes: Holes) {
   return z.object({
     id: z.string().min(1),
     name: z.string().min(1),
     holes: z.literal(holes),
-    par: z.number().min(min).max(max),
-    courseRating: z.number().min(min).max(max),
-    slopeRating: z.number().min(55).max(155),
+    par: z.number().finite(),
+    courseRating: z.number().finite(),
+    slopeRating: z.number().finite().positive(),
   });
 }
 
-const TeeSchema = z.discriminatedUnion("holes", [card(18, 40, 100), card(9, 20, 60)]);
+const TeeSchema = z.discriminatedUnion("holes", [card(18), card(9)]);
 
 /**
  * An eighteen carrying its nine, which is how tees were once kept.
@@ -39,33 +36,41 @@ const TeeSchema = z.discriminatedUnion("holes", [card(18, 40, 100), card(9, 20, 
 const PairedTeeSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  par: z.number().min(40).max(100),
-  courseRating: z.number().min(40).max(100),
-  slopeRating: z.number().min(55).max(155),
+  par: z.number().finite(),
+  courseRating: z.number().finite(),
+  slopeRating: z.number().finite().positive(),
   nine: z
     .object({
-      par: z.number().min(20).max(60),
-      courseRating: z.number().min(20).max(60),
-      slopeRating: z.number().min(55).max(155),
+      par: z.number().finite(),
+      courseRating: z.number().finite(),
+      slopeRating: z.number().finite().positive(),
     })
     .optional(),
 });
 
-const TeesSchema = z
-  .array(z.union([TeeSchema, PairedTeeSchema]))
-  .transform((entries): TeeSet[] =>
-    entries.flatMap((entry) => {
-      if ("holes" in entry) return [entry];
+const EntrySchema = z.union([TeeSchema, PairedTeeSchema]);
 
-      const { nine, ...eighteen } = entry;
-      return [
-        { ...eighteen, holes: 18 as const },
-        ...(nine
-          ? [{ id: `${entry.id}-9`, name: entry.name, holes: 9 as const, ...nine }]
-          : []),
-      ];
-    })
-  );
+/*
+ * Entry by entry, because one unreadable set of tees should cost you that set
+ * of tees and not your handicap index and every other course you play.
+ */
+const TeesSchema = z.array(z.unknown()).transform((entries): TeeSet[] =>
+  entries.flatMap((raw) => {
+    const parsed = EntrySchema.safeParse(raw);
+    if (!parsed.success) return [];
+
+    const entry = parsed.data;
+    if ("holes" in entry) return [entry];
+
+    const { nine, ...eighteen } = entry;
+    return [
+      { ...eighteen, holes: 18 as const },
+      ...(nine
+        ? [{ id: `${entry.id}-9`, name: entry.name, holes: 9 as const, ...nine }]
+        : []),
+    ];
+  })
+);
 
 const StoredSchema = z.object({
   /** Null until somebody says what theirs is. Negative is a plus handicap. */
