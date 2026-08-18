@@ -89,6 +89,15 @@ export const OUTLOOK_HOURS: number[] = Array.from(
   (_, i) => OUTLOOK.firstHour + i
 );
 
+/**
+ * The handicap card. The scoring model itself is NOT here — the World Handicap
+ * System's arithmetic lives in `lib/handicap.ts` with the maths that reads it.
+ */
+export const HANDICAP = {
+  /** Scores shown either side of playing to your course handicap. */
+  bandSpread: 5,
+} as const;
+
 export const SEARCH = {
   /** Nominatim asks for no more than one call a second; a pause beats a queue. */
   debounceMs: 500,

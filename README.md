@@ -21,6 +21,12 @@ you would actually play.
 Courses you play often can be saved. They live in your browser, and they sit at
 the top of the picker.
 
+Underneath is what you'd need to shoot. Put your handicap index in and the
+ratings off the card for the tees you play, and it works out your course
+handicap and lays out the scores either side of playing to it, with the
+differential each one would return. It doesn't record a round — it answers the
+question you ask on the first tee.
+
 ## What it scores
 
 Five things, four of which are weighted against each other and one of which
@@ -37,6 +43,28 @@ multiplies the rest.
 The exact weights, bands and thresholds live in `lib/scoring.ts`, which is pure
 and has the tests. Nothing else in the app decides what a score is — the
 outlook runs the same five factors over every hour of it.
+
+## Handicaps
+
+The World Handicap System, as it stands after the 2024 revision:
+
+    Course Handicap  = Index × (Slope ÷ 113) + (Course Rating − Par)
+    Differential     = (Score − Course Rating) × 113 ÷ Slope
+
+A nine-hole score is made up to eighteen by adding the differential a player of
+your index is expected to return over the nine you didn't play. The governing
+bodies don't publish that expected value; the figure used here matches the one
+worked example they do publish.
+
+Course ratings have to be typed in, once per set of tees, because no free
+service publishes them. Nothing is pre-filled — a rating invented for the sake
+of having one looks exactly like a real one.
+
+Two things it deliberately doesn't do. It takes the Playing Conditions
+Calculation as nought, since that's worked out from the day's scores afterwards
+— which on this app of all apps is worth knowing, because a rough day is
+exactly when it moves. And it won't tell you your new index, which needs your
+last twenty scores.
 
 ## Where the weather comes from
 
