@@ -1,75 +1,64 @@
-# St Andrews Golf Weather Watcher ⛳
+# Golf Weather Watcher ⛳
 
-A fun little app that checks whether the weather for your golf trip to St Andrews, Scotland will be perfect for that round at the Old Course!
+Is it worth getting the clubs out? Pick a course, a date and a tee time, and the
+weather for exactly those hours is scored out of a hundred.
 
-## Features
+It works anywhere in the world, forwards to the end of the forecast and back to
+1940, and it will tell you why it said what it said — every factor shows the
+band table it was scored against.
 
-- 🌡️ Temperature scoring - Is it too hot, too cold, or just right?
-- 💨 Wind assessment - Will your ball fly straight or end up in the rough?
-- ☔ Rain prediction - Do you need waterproofs or just sunscreen?
-- ☀️ Sunshine rating - Will you need sunglasses or an umbrella?
-- 🏌️ Overall golf score - A combined rating from 0-100 for how good the conditions will be!
+## What it scores
 
-## Setup
+Five things, four of which are weighted against each other and one of which
+multiplies the rest.
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+| | |
+|---|---|
+| **Rain** | What falls over the round, or the risk of it when nothing does |
+| **Temperature** | Average over the round; fifteen to twenty is the top band |
+| **Wind** | Average over the round, with a penalty for gusts well above it |
+| **Cloud** | Average cover, because a round in the sun is a better round |
+| **Daylight** | How much of the round is played in light. Nought in the dark |
 
-3. No API key needed! The app now uses Open-Meteo's free weather API (no registration required)
+The exact weights, bands and thresholds live in `lib/scoring.ts`, which is pure
+and has the tests. Nothing else in the app decides what a score is.
 
-## Usage
+## Where the weather comes from
 
-### Web UI (NEW! 🎨)
-Launch the snazzy web interface:
+[Open-Meteo](https://open-meteo.com), which needs no key and no account. Two of
+its models answer, depending on the date:
+
+- the **forecast** model for the days ahead and the last few behind
+- the **archive** — reanalysis, what the weather actually did — for anything
+  older
+
+The page says which one answered, because they are different claims. Course
+search is [Nominatim](https://nominatim.openstreetmap.org), OpenStreetMap's
+geocoder. Both are called from route handlers under `app/api/` rather than from
+the browser, so the responses are validated once and Nominatim gets the user
+agent its terms ask for.
+
+## Running it
+
 ```bash
-# Development
-npm run dev:server
-
-# Production
-npm run build
-npm run serve
-```
-Then open http://localhost:3000 in your browser!
-
-### Command Line Interface
-```bash
-# Development
+npm install
 npm run dev
-
-# Production
-npm run build
-npm start
 ```
 
-## Current Configuration
+Then open http://localhost:3000. There is nothing to configure — no keys, no
+database, no accounts.
 
-- **Location**: St Andrews, Scotland (hardcoded)
-- **Date**: September 26, 2025
-- **Tee Time**: 12:00 - 16:00
+## The checks
 
-## Scoring System
+```bash
+npm run check      # typecheck → lint → knip → unit tests
+npm run e2e:shots  # writes the screenshots, then look at them
+```
 
-The app evaluates weather conditions and provides scores for:
-- **Temperature** (25% weight): Ideal range is 15-20°C
-- **Wind** (35% weight): Lower wind speeds score higher
-- **Rain** (25% weight): No rain = perfect score
-- **Sunshine** (15% weight): Clear skies are best
+The screenshots are served from fixtures rather than the live weather, so two
+runs are comparable. They land in `e2e/screenshots/`.
 
-Overall scores:
-- 90-100: Perfect golfing conditions! ⛳🌟
-- 75-89: Great day for golf! ⛳😄
-- 60-74: Decent golfing weather ⛳😊
-- 45-59: It's playable... pack your rain gear! ⛳🌧️
-- 30-44: Only for the brave! ⛳💨
-- Below 30: Maybe check the clubhouse bar hours... 🍺🌧️
+## Built with
 
-## Future Extensions
-
-- Allow custom dates and locations
-- Add historical weather comparison
-- Include sunrise/sunset times for early/late tee times
-- Add more detailed wind direction analysis
-- Support multiple weather API providers
+Next.js on the App Router, React, Tailwind, shadcn/ui on Radix, TanStack Query,
+lucide icons and Motion. Deployed on Vercel.
