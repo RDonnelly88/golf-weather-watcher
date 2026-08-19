@@ -44,12 +44,28 @@ differential behind a nine-hole score: the governing bodies don't publish it,
 so the value in `lib/handicap.ts` is pinned to the one worked example they do,
 and the test says so. If that formula is ever changed, change the test with it.
 
+**A rating that can't be right is refused, not rendered.** `teeFaults` in
+`lib/handicap.ts` is the one place that decides what a card can plausibly say,
+and both the form and the card ask it. The arithmetic answers confidently for
+any numbers it is handed — a course rating twenty-four strokes above par
+produced "35 shots over 9 holes" and a band to match, and nothing about the
+page said it was nonsense. Bounds live in the model beside the formulae they
+protect; zod in `useHandicap` checks the shape only.
+
+**A form that keeps its fields in state must be keyed to what it edits.**
+`TeeSetForm` reads its props once, into `useState`. Going from editing one set
+of tees to adding another leaves the component mounted, so without a `key` the
+new form opens holding the old numbers — which is how an eighteen's course
+rating came to be saved against a nine.
+
 **A set of tees is one card of one length.** A `TeeSet` carries `holes`, and a
 nine is its own entry rather than three extra numbers on an eighteen. That is
 what lets a nine-hole course be described without inventing an eighteen for it,
 and it is why nothing takes a hole count alongside a tee — the tee already
 knows. Data saved before this is migrated on read in `useHandicap`; don't drop
-that until nobody's browser could still be holding it.
+that until nobody's browser could still be holding it. Entries are read one at
+a time, because one unreadable set of tees should cost you that set and not
+your index and every other course you play.
 
 **Never fabricate weather.** If the model has no answer for a date, say so.
 Standing in demo readings when the API returns nothing produces a page that
@@ -73,6 +89,14 @@ not.
 course.** A morning in Auckland is not over because it is evening in Fife. The
 outlook carries the course's UTC offset for exactly this, and `courseTime()`
 is the only thing that should answer it.
+
+**An explanation is handed its numbers, never left to work them out.**
+`Working` shows where a differential came from, and every figure in it comes
+out of `lib/handicap.ts` — `differentialParts` exists so that the two halves of
+a nine can be shown without a component deriving them. The halves come out
+unrounded because the system rounds once at the end; rounding them first moves
+a quarter of all nine-hole differentials by a tenth, so anything displaying
+them shows enough decimals to add up.
 
 **Colour is never the only carrier of a score.** The heatmap paints an hour and
 says nothing in the cell, so the accessible name spells the number out. Any new

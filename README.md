@@ -46,7 +46,7 @@ outlook runs the same five factors over every hour of it.
 
 ## Handicaps
 
-The World Handicap System, as it stands after the 2024 revision:
+The World Handicap System:
 
     Course Handicap  = Index × (Slope ÷ 113) + (Course Rating − Par)
     Differential     = (Score − Course Rating) × 113 ÷ Slope
@@ -60,6 +60,10 @@ A nine-hole score is made up to eighteen by adding the differential a player of
 your index is expected to return over the nine you didn't play. The governing
 bodies don't publish that expected value; the figure used here matches the one
 worked example they do publish.
+
+The card shows this working with your own index and the ratings off your card
+substituted into it, including which half of a nine-hole differential you
+played and which half was assumed for you.
 
 Course ratings have to be typed in, once per set of tees, because no free
 service publishes them. Nothing is pre-filled — a rating invented for the sake

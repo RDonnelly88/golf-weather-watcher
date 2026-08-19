@@ -7,7 +7,9 @@ import {
   expectedNineDifferential,
   scoreBand,
   scoreDifferential,
+  differentialParts,
   scoreFor,
+  teeFaults,
   type TeeSet,
 } from "@/lib/handicap";
 
@@ -138,6 +140,39 @@ describe("score differential", () => {
   });
 });
 
+describe("the two halves of a nine-hole differential", () => {
+  it("splits a nine into the half walked and the half assumed", () => {
+    const parts = differentialParts(43, WHITES_NINE, 12);
+    expect(parts.played).toBeCloseTo(6.39, 2);
+    expect(parts.expected).toBeCloseTo(7.41, 2);
+    expect(parts.played + parts.expected).toBeCloseTo(parts.total, 1);
+  });
+
+  it("assumes nothing over eighteen", () => {
+    expect(differentialParts(85, WHITES, 12).expected).toBe(0);
+  });
+
+  it("rounds once at the end, as the system does", () => {
+    // Rounding the halves first and adding them moves a quarter of all
+    // nine-hole differentials by a tenth, so the halves come out raw.
+    for (const score of [40, 41, 42, 43, 44, 45, 46, 47, 48]) {
+      for (const index of [0, 6.3, 12, 20, 28.7, 36]) {
+        expect(differentialParts(score, WHITES_NINE, index).total).toBe(
+          scoreDifferential(score, WHITES_NINE, index)
+        );
+      }
+    }
+  });
+
+  it("goes below the assumed half when the nine is good enough", () => {
+    // The half you walked turns negative once you beat the course rating, so
+    // the assumption is not a floor under the differential.
+    const parts = differentialParts(27, WHITES_NINE, 20);
+    expect(parts.played).toBeLessThan(0);
+    expect(parts.total).toBeLessThan(parts.expected);
+  });
+});
+
 describe("the score a differential needs", () => {
   it("inverts the differential", () => {
     const score = scoreFor(11.2, WHITES, 12);
@@ -193,6 +228,55 @@ describe("the band", () => {
     // Par 36 plus a course handicap of 7.
     expect(nine.find((row) => row.expected)?.score).toBe(43);
     expect(nine.map((row) => row.toPar)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+});
+
+describe("numbers that can't have come off a card", () => {
+  it("passes a card that reads like a card", () => {
+    expect(teeFaults(WHITES)).toEqual([]);
+    expect(teeFaults(WHITES_NINE)).toEqual([]);
+    expect(teeFaults(YELLOWS)).toEqual([]);
+  });
+
+  it("catches an eighteen-hole rating typed against a nine", () => {
+    // The way it gets in: par retyped for the nine, the rating left behind.
+    expect(teeFaults({ ...WHITES_NINE, courseRating: 72.6 })).toEqual([
+      "courseRating",
+    ]);
+  });
+
+  it("catches a rating far enough from par to be another course", () => {
+    expect(teeFaults({ ...WHITES, courseRating: 59.8 })).toContain("courseRating");
+  });
+
+  it("allows a hard course to rate well above its par", () => {
+    expect(teeFaults({ ...WHITES, courseRating: 76.4 })).toEqual([]);
+  });
+
+  it("allows a course to rate below its par", () => {
+    expect(teeFaults({ ...WHITES, courseRating: 68.9 })).toEqual([]);
+  });
+
+  it("catches a par that is not a round of golf", () => {
+    expect(teeFaults({ ...WHITES, par: 36, courseRating: 36.2 })).toEqual(["par"]);
+    expect(teeFaults({ ...WHITES_NINE, par: 72, courseRating: 72.6 })).toEqual(["par"]);
+  });
+
+  it("takes a par three course over nine", () => {
+    expect(
+      teeFaults({ ...WHITES_NINE, par: 27, courseRating: 26.4, slopeRating: 82 })
+    ).toEqual([]);
+  });
+
+  it("catches a slope outside the range the system defines", () => {
+    expect(teeFaults({ ...WHITES, slopeRating: 200 })).toEqual(["slopeRating"]);
+    expect(teeFaults({ ...WHITES, slopeRating: 12 })).toEqual(["slopeRating"]);
+  });
+
+  it("names every field that is wrong, not just the first", () => {
+    expect(
+      teeFaults({ ...WHITES_NINE, par: 300, courseRating: 10, slopeRating: 300 })
+    ).toEqual(["par", "slopeRating", "courseRating"]);
   });
 });
 

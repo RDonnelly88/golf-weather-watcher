@@ -12,7 +12,7 @@
  */
 
 /** The neutral slope. A course of average difficulty rates 113. */
-const NEUTRAL_SLOPE = 113;
+export const NEUTRAL_SLOPE = 113;
 
 export type Holes = 9 | 18;
 
@@ -55,16 +55,26 @@ export function courseHandicap(index: number, tee: TeeSet): number {
 }
 
 /**
+ * The three numbers behind the expected differential.
+ *
+ * Named so that a card explaining where the figure came from can show the
+ * arithmetic without keeping its own copy of it.
+ */
+export const EXPECTED_NINE = { perIndex: 73, offset: 162, divisor: 140 } as const;
+
+/**
  * What a nine you did not play is expected to be worth.
  *
- * A nine-hole round no longer waits to be paired with another one: it is made
- * up to eighteen holes at once, by adding the differential a player of your
- * index would be expected to return over the missing nine. It is a neutral
- * figure for an index rather than anything about you, so a good nine makes a
- * good eighteen-hole differential and an ordinary one makes an ordinary one.
+ * A nine-hole score is made up to eighteen holes as it is posted, by adding
+ * the differential a player of your index is expected to return over the nine
+ * missing from it. It is a neutral figure for an index rather than anything
+ * about you, so a good nine makes a good eighteen-hole differential and an
+ * ordinary one makes an ordinary one.
  */
 export function expectedNineDifferential(index: number): number {
-  return (index * 73 + 162) / 140;
+  return (
+    (index * EXPECTED_NINE.perIndex + EXPECTED_NINE.offset) / EXPECTED_NINE.divisor
+  );
 }
 
 /** Differentials are carried to one decimal place, and no further. */
@@ -91,10 +101,40 @@ export function scoreDifferential(
   tee: TeeSet,
   index: number
 ): number {
-  const played =
-    ((grossScore - tee.courseRating) * NEUTRAL_SLOPE) / tee.slopeRating;
+  return differentialParts(grossScore, tee, index).total;
+}
 
-  return toTenth(tee.holes === 9 ? played + expectedNineDifferential(index) : played);
+/** A differential and the two halves it was made of. */
+export interface DifferentialParts {
+  /** The holes actually walked, with the course taken out of them. */
+  played: number;
+  /** The nine that wasn't, expected from the index alone. Nought over eighteen. */
+  expected: number;
+  /** The differential itself, carried to one decimal place. */
+  total: number;
+}
+
+/**
+ * The same arithmetic as above, kept apart.
+ *
+ * A card that explains where a nine-hole differential came from has to show
+ * the two halves, and the only safe way to show them is to be handed them —
+ * a component that works out the split itself is a second copy of this waiting
+ * to disagree with the first.
+ *
+ * The halves come out unrounded, because the system rounds once at the end and
+ * rounding them first moves a quarter of all nine-hole differentials by a
+ * tenth. Anything showing them has to show enough decimals to add up.
+ */
+export function differentialParts(
+  grossScore: number,
+  tee: TeeSet,
+  index: number
+): DifferentialParts {
+  const played = ((grossScore - tee.courseRating) * NEUTRAL_SLOPE) / tee.slopeRating;
+  const expected = tee.holes === 9 ? expectedNineDifferential(index) : 0;
+
+  return { played, expected, total: toTenth(played + expected) };
 }
 
 /**
@@ -114,6 +154,56 @@ export function scoreFor(
   return Math.round(
     tee.courseRating + (played * tee.slopeRating) / NEUTRAL_SLOPE
   );
+}
+
+/**
+ * What a card can plausibly say, so that a number from the wrong one is caught
+ * rather than believed.
+ *
+ * These are not the arithmetic — the formulae above will take any figures they
+ * are given and answer confidently. They are the sanity check the formulae
+ * can't do for themselves: a rating twenty strokes off its par produces a
+ * course handicap that looks like a typing mistake and reads like a fact.
+ */
+const PAR: Record<Holes, [number, number]> = {
+  9: [27, 40],
+  18: [54, 80],
+};
+
+/** The range the World Handicap System defines a slope over. */
+const SLOPE: [number, number] = [55, 155];
+
+/**
+ * How far a course rating can sit from par.
+ *
+ * It is the score a scratch player is expected to return, so it tracks par
+ * closely — a couple either way is normal and five is a hard course. Eight is
+ * loose enough not to refuse a real card and tight enough to catch an
+ * eighteen-hole rating typed against a nine.
+ */
+const MAX_DRIFT = 8;
+
+/** The field on the card that can't be right, if any of them can't. */
+export type TeeFault = "par" | "courseRating" | "slopeRating";
+
+function outside(value: number, [low, high]: [number, number]): boolean {
+  return !(value >= low && value <= high);
+}
+
+/** Which of a set of tees' numbers could not have come off the card. */
+export function teeFaults(tee: TeeSet): TeeFault[] {
+  const faults: TeeFault[] = [];
+
+  if (outside(tee.par, PAR[tee.holes])) faults.push("par");
+  if (outside(tee.slopeRating, SLOPE)) faults.push("slopeRating");
+  if (Math.abs(tee.courseRating - tee.par) > MAX_DRIFT) faults.push("courseRating");
+
+  return faults;
+}
+
+/** The bounds themselves, for a form that has to say what it will accept. */
+export function parRange(holes: Holes): [number, number] {
+  return PAR[holes];
 }
 
 export interface BandRow {

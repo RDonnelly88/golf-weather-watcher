@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 
-import type { Holes, TeeSet } from "@/lib/handicap";
+import { parRange, teeFaults, type Holes, type TeeFault, type TeeSet } from "@/lib/handicap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,12 +25,28 @@ const PLACEHOLDERS: Record<Holes, Fields> = {
 function Field({
   id,
   label,
+  problem,
   ...props
-}: { id: string; label: string } & React.ComponentProps<typeof Input>) {
+}: { id: string; label: string; problem?: string } & React.ComponentProps<
+  typeof Input
+>) {
   return (
     <div className="space-y-1">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} {...props} />
+      <Input
+        id={id}
+        aria-invalid={problem ? true : undefined}
+        aria-describedby={problem ? `${id}-problem` : undefined}
+        className={problem ? "border-poor" : undefined}
+        {...props}
+      />
+      {/* Said at the field rather than in a summary: the number that is wrong
+          is the thing you have to look at on the card again. */}
+      {problem && (
+        <p id={`${id}-problem`} className="text-xs text-poor">
+          {problem}
+        </p>
+      )}
     </div>
   );
 }
@@ -67,9 +83,14 @@ export default function TeeSetForm({
         }
       : EMPTY
   );
+  const [faults, setFaults] = useState<TeeFault[]>([]);
   const ids = useId();
   const id = (name: string) => `${ids}-${name}`;
   const hint = PLACEHOLDERS[holes];
+  const [lowPar, highPar] = parRange(holes);
+
+  const problem = (field: TeeFault, message: string) =>
+    faults.includes(field) ? message : undefined;
 
   const set = (name: keyof Fields) => (event: React.ChangeEvent<HTMLInputElement>) =>
     setFields((current) => ({ ...current, [name]: event.target.value }));
@@ -82,14 +103,23 @@ export default function TeeSetForm({
     const slopeRating = Number(fields.slopeRating);
     if (![par, courseRating, slopeRating].every(Number.isFinite)) return;
 
-    onSave({
+    const candidate = {
       id: tee?.id ?? crypto.randomUUID(),
       name: fields.name.trim() || "Tees",
       holes,
       par,
       courseRating,
       slopeRating,
-    });
+    };
+
+    // Refused here rather than saved and shown: every figure on the card below
+    // is worked out from these three, and a wrong one reads exactly like a
+    // right one once it has been turned into a score.
+    const found = teeFaults(candidate);
+    setFaults(found);
+    if (found.length > 0) return;
+
+    onSave(candidate);
   }
 
   return (
@@ -98,7 +128,10 @@ export default function TeeSetForm({
       <SegmentedControl
         label="Holes these tees are rated over"
         value={String(holes)}
-        onValueChange={(next) => setHoles(Number(next) as Holes)}
+        onValueChange={(next) => {
+          setHoles(Number(next) as Holes);
+          setFaults([]);
+        }}
         className="mb-3"
       >
         <SegmentedControlItem value="18" className="h-8 px-3 text-xs">
@@ -124,6 +157,10 @@ export default function TeeSetForm({
           placeholder={hint.par}
           value={fields.par}
           onChange={set("par")}
+          problem={problem(
+            "par",
+            `A ${holes === 9 ? "nine" : "round"} is a par of ${lowPar} to ${highPar}.`
+          )}
           required
         />
         <Field
@@ -133,6 +170,12 @@ export default function TeeSetForm({
           placeholder={hint.courseRating}
           value={fields.courseRating}
           onChange={set("courseRating")}
+          problem={problem(
+            "courseRating",
+            holes === 9
+              ? "A rating sits within a few strokes of par — is this the eighteen-hole one?"
+              : "A rating sits within a few strokes of par."
+          )}
           required
         />
         <Field
@@ -142,6 +185,7 @@ export default function TeeSetForm({
           placeholder={hint.slopeRating}
           value={fields.slopeRating}
           onChange={set("slopeRating")}
+          problem={problem("slopeRating", "Slope runs from 55 to 155.")}
           required
         />
       </div>
