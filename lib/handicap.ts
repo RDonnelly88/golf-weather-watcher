@@ -55,16 +55,26 @@ export function courseHandicap(index: number, tee: TeeSet): number {
 }
 
 /**
+ * The three numbers behind the expected differential.
+ *
+ * Named so that a card explaining where the figure came from can show the
+ * arithmetic without keeping its own copy of it.
+ */
+export const EXPECTED_NINE = { perIndex: 73, offset: 162, divisor: 140 } as const;
+
+/**
  * What a nine you did not play is expected to be worth.
  *
- * A nine-hole round no longer waits to be paired with another one: it is made
- * up to eighteen holes at once, by adding the differential a player of your
- * index would be expected to return over the missing nine. It is a neutral
- * figure for an index rather than anything about you, so a good nine makes a
- * good eighteen-hole differential and an ordinary one makes an ordinary one.
+ * A nine-hole score is made up to eighteen holes as it is posted, by adding
+ * the differential a player of your index is expected to return over the nine
+ * missing from it. It is a neutral figure for an index rather than anything
+ * about you, so a good nine makes a good eighteen-hole differential and an
+ * ordinary one makes an ordinary one.
  */
 export function expectedNineDifferential(index: number): number {
-  return (index * 73 + 162) / 140;
+  return (
+    (index * EXPECTED_NINE.perIndex + EXPECTED_NINE.offset) / EXPECTED_NINE.divisor
+  );
 }
 
 /** Differentials are carried to one decimal place, and no further. */

@@ -46,7 +46,7 @@ outlook runs the same five factors over every hour of it.
 
 ## Handicaps
 
-The World Handicap System, as it stands after the 2024 revision:
+The World Handicap System:
 
     Course Handicap  = Index × (Slope ÷ 113) + (Course Rating − Par)
     Differential     = (Score − Course Rating) × 113 ÷ Slope

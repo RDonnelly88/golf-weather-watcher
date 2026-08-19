@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 import {
+  EXPECTED_NINE,
   NEUTRAL_SLOPE,
   courseHandicap,
   differentialParts,
@@ -84,6 +85,7 @@ export default function Working({ tee, index }: { tee: TeeSet; index: number }) 
             The course taken back out of the score, so a round here can be
             compared with a round anywhere. Taking {level} — the score that
             means you played to your handicap — as the example.
+            {nine && " The nine you play, then the nine you don't."}
           </p>
           <Line value={parts.played.toFixed(2)}>
             ({level} − {tee.courseRating}) × {NEUTRAL_SLOPE} ÷ {tee.slopeRating}
@@ -92,7 +94,8 @@ export default function Working({ tee, index }: { tee: TeeSet; index: number }) 
           {nine && (
             <>
               <Line value={`+ ${parts.expected.toFixed(2)}`}>
-                the nine you didn&apos;t play
+                ({formatHandicap(index)} × {EXPECTED_NINE.perIndex} +{" "}
+                {EXPECTED_NINE.offset}) ÷ {EXPECTED_NINE.divisor}
               </Line>
               <Line value={parts.total.toFixed(1)}>
                 {(parts.played + parts.expected).toFixed(2)}, carried to one
@@ -101,12 +104,13 @@ export default function Working({ tee, index }: { tee: TeeSet; index: number }) 
 
               <Heading>The nine you didn&apos;t play</Heading>
               <p className="pretty text-xs text-muted-foreground">
-                A nine no longer waits to be paired with another one. It is made
-                up to eighteen holes as soon as it is posted, by adding the
-                differential a player off {formatHandicap(index)} is expected to
-                return over the nine missing from it. That figure comes from
-                your index alone — not from this course, and not from how you
-                went round — so a good nine still makes a good differential.
+                A nine is made up to eighteen holes as it is posted, by adding
+                the differential a player off {formatHandicap(index)} is
+                expected to return over the nine missing from it. That is the
+                second line above, and every figure in it but your index is
+                fixed: it comes from your index alone — not from this course,
+                and not from how you went round — so a good nine still makes a
+                good differential.
               </p>
               <p className="pretty mt-2 text-xs text-muted-foreground">
                 It does mean half of every nine-hole differential is an
