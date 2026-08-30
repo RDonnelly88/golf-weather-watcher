@@ -7,6 +7,7 @@ import { HANDICAP, courseKey, type Course } from "@/lib/config";
 import {
   courseHandicap,
   formatHandicap,
+  parseHandicap,
   scoreBand,
   teeFaults,
   type TeeSet,
@@ -60,6 +61,11 @@ export default function HandicapCard({
   const titleId = useId();
   const indexId = useId();
 
+  // What is in the box while it is being typed into. The stored index stays
+  // the truth; this is the keystrokes on their way to becoming one, and it
+  // exists because formatting the field on every keystroke ate them — "1"
+  // became "1.0", so the "2" after it landed in the decimal and rounded away.
+  const [draft, setDraft] = useState<string | null>(null);
   const [editing, setEditing] = useState<TeeSet | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -103,17 +109,20 @@ export default function HandicapCard({
                 inputMode="decimal"
                 placeholder="12.4"
                 className="tabular"
-                value={handicap.index === null ? "" : formatHandicap(handicap.index)}
+                value={
+                  draft ??
+                  (handicap.index === null ? "" : formatHandicap(handicap.index))
+                }
                 onChange={(event) => {
-                  const text = event.target.value.trim();
-                  if (text === "") return handicap.setIndex(null);
-                  // A plus handicap is written "+2.4" and worth minus two and a
-                  // bit, so the sign on screen is the opposite of the arithmetic.
-                  const value = text.startsWith("+")
-                    ? -Number(text.slice(1))
-                    : Number(text);
-                  if (!Number.isNaN(value)) handicap.setIndex(value);
+                  const text = event.target.value;
+                  setDraft(text);
+                  // Anything that reads as a handicap is stored as you type, so
+                  // the band keeps up; anything that doesn't yet is left on
+                  // screen to be finished rather than thrown away.
+                  const parsed = parseHandicap(text);
+                  if (parsed !== undefined) handicap.setIndex(parsed);
                 }}
+                onBlur={() => setDraft(null)}
               />
             </div>
 

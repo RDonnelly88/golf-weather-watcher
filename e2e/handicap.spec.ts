@@ -77,6 +77,54 @@ test.describe("what you'd need to shoot", () => {
     );
   });
 
+  test("lets an index be typed a character at a time", async ({ page }) => {
+    await freezeClock(page);
+    await serveWeather(page);
+    await saveHandicap(page);
+    await page.goto("/");
+
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    const index = page.getByLabel("Handicap index");
+    await index.click();
+    await index.press("ControlOrMeta+a");
+
+    // Formatting the field on every keystroke turned "1" into "1.0", so the
+    // "2" after it landed in the decimal place and rounded away — no index
+    // above nine could be typed at all.
+    await index.pressSequentially("12");
+    await expect(index).toHaveValue("12");
+
+    await index.pressSequentially(".4");
+    await expect(index).toHaveValue("12.4");
+
+    // The band keeps up as it is typed, without waiting for the field to be left.
+    await expect(card).toContainText("Off 12.4 from the White tees");
+
+    // Leaving the field writes it the way golf writes it.
+    await index.blur();
+    await expect(index).toHaveValue("12.4");
+  });
+
+  test("takes a plus handicap and an emptied field", async ({ page }) => {
+    await freezeClock(page);
+    await serveWeather(page);
+    await saveHandicap(page);
+    await page.goto("/");
+
+    const card = page.getByRole("region", { name: "What you'd need to shoot" });
+    const index = page.getByLabel("Handicap index");
+    await index.click();
+    await index.press("ControlOrMeta+a");
+    await index.pressSequentially("+2.4");
+    await expect(index).toHaveValue("+2.4");
+    await expect(card).toContainText("Off +2.4 from the White tees");
+
+    await index.press("ControlOrMeta+a");
+    await index.press("Backspace");
+    await expect(index).toHaveValue("");
+    await expect(card).toContainText("Put your handicap index in");
+  });
+
   test("shows its working, in the reader's own numbers", async ({ page }) => {
     await freezeClock(page);
     await serveWeather(page);
