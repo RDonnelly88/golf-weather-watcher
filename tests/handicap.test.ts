@@ -8,6 +8,7 @@ import {
   scoreBand,
   scoreDifferential,
   differentialParts,
+  parseHandicap,
   scoreFor,
   teeFaults,
   type TeeSet,
@@ -277,6 +278,61 @@ describe("numbers that can't have come off a card", () => {
     expect(
       teeFaults({ ...WHITES_NINE, par: 300, courseRating: 10, slopeRating: 300 })
     ).toEqual(["par", "slopeRating", "courseRating"]);
+  });
+});
+
+describe("reading a handicap that is being typed", () => {
+  it("takes a whole number and a decimal one", () => {
+    expect(parseHandicap("12")).toBe(12);
+    expect(parseHandicap("12.4")).toBe(12.4);
+    expect(parseHandicap(".4")).toBe(0.4);
+    expect(parseHandicap("0")).toBe(0);
+  });
+
+  it("takes a handicap half typed, so the rest can be typed", () => {
+    // "12" on the way to "12.4" has to be accepted as it stands, or the
+    // field reformats underneath the next keystroke and eats it.
+    expect(parseHandicap("12.")).toBe(12);
+  });
+
+  it("reads a plus handicap as the strokes it really is", () => {
+    expect(parseHandicap("+2.4")).toBe(-2.4);
+    expect(parseHandicap("+0")).toBe(0);
+  });
+
+  it("says nothing yet rather than refusing a part-typed sign", () => {
+    expect(parseHandicap("+")).toBeUndefined();
+    expect(parseHandicap(".")).toBeUndefined();
+  });
+
+  it("clears on an emptied field", () => {
+    expect(parseHandicap("")).toBeNull();
+    expect(parseHandicap("   ")).toBeNull();
+  });
+
+  it("refuses what is not a handicap", () => {
+    expect(parseHandicap("abc")).toBeUndefined();
+    expect(parseHandicap("1.2.3")).toBeUndefined();
+    // Nobody writes a plus handicap with a minus, so it isn't read as one.
+    expect(parseHandicap("-2.4")).toBeUndefined();
+  });
+
+  it("holds to the range the system allows", () => {
+    expect(parseHandicap("54")).toBe(54);
+    expect(parseHandicap("54.1")).toBeUndefined();
+    expect(parseHandicap("+10")).toBe(-10);
+    expect(parseHandicap("+10.1")).toBeUndefined();
+  });
+
+  it("keeps one decimal place, which is all an index has", () => {
+    expect(parseHandicap("12.45")).toBe(12.5);
+    expect(parseHandicap("12.44")).toBe(12.4);
+  });
+
+  it("round trips through the way it is written", () => {
+    for (const text of ["12.4", "+2.4", "0.0", "54.0"]) {
+      expect(formatHandicap(parseHandicap(text) as number)).toBe(text);
+    }
   });
 });
 

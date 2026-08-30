@@ -260,6 +260,47 @@ export function formatHandicap(value: number, places = 1): string {
   return value.toFixed(places);
 }
 
+/**
+ * What a handicap index can be: ten better than scratch, up to fifty-four.
+ *
+ * Here rather than in the storage schema because it is a fact about the
+ * system, and the field that reads one and the store that keeps one should not
+ * be able to disagree about it.
+ */
+export const INDEX_RANGE: [number, number] = [-10, 54];
+
+/**
+ * A typed handicap, read the way golf writes one.
+ *
+ * Three answers, because a field being typed into has three states: a number
+ * for text that is a handicap, null for a field that has been emptied, and
+ * undefined for text that is not a handicap *yet* — a lone "+", a trailing
+ * point, a figure still being extended past the end of the range. Undefined
+ * means leave what is on screen alone rather than reject it.
+ */
+export function parseHandicap(text: string): number | null | undefined {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+
+  // A plus handicap is written "+2.4" and is worth minus two and a bit. A
+  // leading minus is not how anybody writes one, so it isn't read as one.
+  const plus = trimmed.startsWith("+");
+  const digits = plus ? trimmed.slice(1) : trimmed;
+  if (!/^(\d+(\.\d*)?|\.\d+)$/.test(digits)) return undefined;
+
+  const value = Number(digits);
+  if (!Number.isFinite(value)) return undefined;
+
+  // An index carries one decimal place, so that is what is kept: storing
+  // 12.45 and drawing it as 12.5 is two numbers where there should be one.
+  const rounded = Math.round((plus ? -value : value) * 10) / 10;
+  // "+0" is scratch, not negative zero — which would otherwise reach storage.
+  const signed = rounded === 0 ? 0 : rounded;
+  const [low, high] = INDEX_RANGE;
+
+  return signed >= low && signed <= high ? signed : undefined;
+}
+
 /** A score against par, as a card would write it. */
 export function formatToPar(toPar: number): string {
   if (toPar === 0) return "level";

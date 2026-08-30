@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 
-import type { Holes, TeeSet } from "@/lib/handicap";
+import { INDEX_RANGE, type Holes, type TeeSet } from "@/lib/handicap";
 
 const STORAGE_KEY = "golf-weather-watcher-handicap";
 
@@ -74,7 +74,7 @@ const TeesSchema = z.array(z.unknown()).transform((entries): TeeSet[] =>
 
 const StoredSchema = z.object({
   /** Null until somebody says what theirs is. Negative is a plus handicap. */
-  index: z.number().min(-10).max(54).nullable(),
+  index: z.number().min(INDEX_RANGE[0]).max(INDEX_RANGE[1]).nullable(),
   /** Keyed by `courseKey`, because a course is rated from every set of tees. */
   tees: z.record(z.string(), TeesSchema),
   /** The tees you last played there, so the card opens on them. */
